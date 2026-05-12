@@ -1,1 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YourStocks — App Wireframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
 
+  <!-- ═══════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════ -->
+  <header>
+    <div class="header-left">
+      <div class="logo">YourStocks <span>/ Wireframe</span></div>
+      <p class="header-sub">App Architecture · All Screens · Page Relationships</p>
+    </div>
+    <div class="badge">v1.0 · Mobile-First</div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       MAIN CANVAS
+  ═══════════════════════════════════════ -->
+  <main class="canvas">
+
+    <!-- ───────────────────────────────
+         SECTION 1: PAGE FLOW MAP
+    ─────────────────────────────── -->
+    <h2 class="section-label">01 — Page Flow &amp; Navigation Map</h2>
+
+    <div class="flow-section">
+      <p class="flow-intro">Every arrow represents a navigation path. The bottom nav bar (Home · Markets · Simulate · Alerts · Settings) is accessible from all authenticated screens.</p>
+
+      <!-- Flow Tree -->
+      <div class="flow-tree">
+
+        <!-- Root -->
+        <div class="flow-col">
+          <div class="flow-node root">🪐 Splash / Launch</div>
+          <div class="flow-arrow-v"></div>
+        </div>
+
+        <!-- Auth branch -->
+        <div class="flow-auth-row">
+          <div class="flow-branch">
+            <div class="flow-node auth">📝 Create Account</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node auth small">Risk Profile Setup</div>
+          </div>
+          <div class="flow-branch">
+            <div class="flow-node auth">🔐 Log In</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node auth small">2FA / Biometric</div>
+          </div>
+        </div>
+
+        <div class="flow-arrow-v tall"></div>
+
+        <!-- Hub -->
+        <div class="flow-col">
+          <div class="flow-node hub">🏠 Dashboard (Hub)</div>
+        </div>
+
+        <!-- Leaf pages -->
+        <div class="flow-leaves">
+          <div class="flow-branch">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf">📈 Markets &amp; Watchlist</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf green-node">Stock Detail + Chart</div>
+          </div>
+          <div class="flow-branch">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf">🎮 Simulated Trading</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf purple-node">Simulation History</div>
+          </div>
+          <div class="flow-branch">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf">🔔 Alerts &amp; Notifications</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf yellow-node">Manage Alert Rules</div>
+          </div>
+          <div class="flow-branch">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf">🧠 Risk Profile</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf">Asset Allocation View</div>
+          </div>
+          <div class="flow-branch">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf">⚙️ Settings &amp; Security</div>
+            <div class="flow-arrow-v"></div>
+            <div class="flow-node leaf red-node">Sign Out</div>
+          </div>
+        </div>
+
+      </div><!-- /flow-tree -->
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item"><span class="legend-line accent"></span> Primary auth flow</div>
+        <div class="legend-item"><span class="legend-line purple"></span> Hub → Feature pages</div>
+        <div class="legend-item"><span class="legend-line dim"></span> Persistent bottom nav</div>
+        <div class="legend-item"><span class="legend-line yellow"></span> Feature → Sub-screen</div>
+      </div>
+    </div>
+
+
+    <!-- ───────────────────────────────
+         SECTION 2: SCREEN WIREFRAMES
+    ─────────────────────────────── -->
+    <h2 class="section-label">02 — Screen Wireframes</h2>
+
+    <!-- ROW A: Onboarding Screens -->
+    <h3 class="row-label">A · Onboarding</h3>
+    <div class="screens-row">
+
+      <!-- A1: Splash -->
+      <div class="screen" id="screen-splash">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">splash_screen</span>
+        </div>
+        <div class="screen-body splash-body">
+          <div class="splash-icon">📈</div>
+          <div class="splash-logo">YourStocks</div>
+          <p class="splash-sub">All your investments.<br>One platform.</p>
+          <button class="btn btn-primary" onclick="showToast('Navigating to Create Account…')">Get Started</button>
+          <button class="btn btn-outline" onclick="showToast('Navigating to Log In…')">Sign In</button>
+        </div>
+      </div>
+
+      <!-- A2: Create Account -->
+      <div class="screen" id="screen-create">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">create_account</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Create Account</h3>
+          <p class="ui-small">Start building your portfolio</p>
+          <label class="ui-label">Full Name</label>
+          <div class="ui-field"><span>👤</span> Your name</div>
+          <label class="ui-label">Email</label>
+          <div class="ui-field"><span>✉️</span> you@email.com</div>
+          <label class="ui-label">Password</label>
+          <div class="ui-field"><span>🔒</span> ••••••••</div>
+          <hr class="ui-divider" />
+          <button class="btn btn-primary" onclick="showToast('Account created → Risk Profile Setup')">Create Account</button>
+          <button class="btn btn-outline small-btn" onclick="showToast('Going to Log In…')">Already have an account? Sign in</button>
+          <div class="rel-tag"><span class="rel-dot blue-dot"></span>→ Risk Profile Setup</div>
+        </div>
+      </div>
+
+      <!-- A3: Login -->
+      <div class="screen" id="screen-login">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">login_screen</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Welcome back</h3>
+          <p class="ui-small">Sign in to your portfolio</p>
+          <label class="ui-label">Email</label>
+          <div class="ui-field"><span>✉️</span> you@email.com</div>
+          <label class="ui-label">Password</label>
+          <div class="ui-field"><span>🔒</span> ••••••••</div>
+          <button class="btn btn-primary" onclick="showToast('Signed in → 2FA check')">Sign In</button>
+          <hr class="ui-divider" />
+          <label class="ui-label">2FA Verification</label>
+          <div class="ui-field blue-border"><span>📱</span> 6-digit code</div>
+          <button class="btn btn-blue" onclick="showToast('Verified → Dashboard')">Verify Code</button>
+          <div class="rel-tag"><span class="rel-dot purple-dot"></span>→ Dashboard</div>
+        </div>
+      </div>
+
+      <!-- A4: Risk Profile Setup -->
+      <div class="screen" id="screen-risksetup">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">risk_profile_setup</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Risk Assessment</h3>
+          <p class="ui-small">Help us understand your tolerance</p>
+          <div class="ui-field yellow-border">Q1: Investment horizon?</div>
+          <div class="chip-row">
+            <span class="chip chip-green" onclick="selectChip(this)">Short</span>
+            <span class="chip chip-yellow" onclick="selectChip(this)">Medium</span>
+            <span class="chip chip-red" onclick="selectChip(this)">Long</span>
+          </div>
+          <div class="ui-field yellow-border">Q2: Reaction to 20% loss?</div>
+          <div class="chip-row">
+            <span class="chip chip-green" onclick="selectChip(this)">Sell all</span>
+            <span class="chip chip-yellow" onclick="selectChip(this)">Hold</span>
+            <span class="chip chip-red" onclick="selectChip(this)">Buy more</span>
+          </div>
+          <hr class="ui-divider" />
+          <div class="risk-gauge-box">
+            <p class="ui-small">Your Risk Score</p>
+            <div class="gauge-bar"><div class="gauge-needle"></div></div>
+            <span class="gauge-label">MODERATE</span>
+          </div>
+          <button class="btn btn-primary" onclick="showToast('Profile saved → Dashboard')">Save Profile</button>
+          <div class="rel-tag"><span class="rel-dot purple-dot"></span>→ Dashboard</div>
+        </div>
+      </div>
+
+    </div><!-- /row A -->
+
+
+    <!-- ROW B: Core Screens -->
+    <h3 class="row-label">B · Core Screens</h3>
+    <div class="screens-row">
+
+      <!-- B1: Dashboard -->
+      <div class="screen wide-screen" id="screen-dashboard">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">dashboard</span>
+          <span class="page-tag">HUB</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading large">Your Portfolio</h3>
+          <div class="stat-row">
+            <div class="stat-box"><div class="stat-val green-text">$107K</div><div class="stat-lbl">Total Value</div></div>
+            <div class="stat-box"><div class="stat-val green-text">+$3.1K</div><div class="stat-lbl">P&amp;L Today</div></div>
+            <div class="stat-box"><div class="stat-val yellow-text">+2.9%</div><div class="stat-lbl">Return</div></div>
+          </div>
+          <div class="mini-chart" id="chart-dashboard">
+            <!-- bars injected by JS -->
+          </div>
+          <p class="ui-label">Holdings</p>
+          <div class="list-item" onclick="showToast('Opening AAPL stock detail…')">
+            <div><div class="list-ticker green-text">AAPL</div><div class="list-name">Apple Inc.</div></div>
+            <div class="list-right"><div>$189.40</div><span class="chip chip-green">+1.2%</span></div>
+          </div>
+          <div class="list-item" onclick="showToast('Opening TSLA stock detail…')">
+            <div><div class="list-ticker red-text">TSLA</div><div class="list-name">Tesla Inc.</div></div>
+            <div class="list-right"><div>$241.10</div><span class="chip chip-red">−2.4%</span></div>
+          </div>
+          <div class="list-item" onclick="showToast('Opening NVDA stock detail…')">
+            <div><div class="list-ticker blue-text">NVDA</div><div class="list-name">NVIDIA Corp.</div></div>
+            <div class="list-right"><div>$875.00</div><span class="chip chip-green">+3.7%</span></div>
+          </div>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon active" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon" onclick="navTo('settings')">⚙️</button>
+        </nav>
+        <div class="nav-links-bar">
+          <span class="nav-link-chip" onclick="showToast('→ Markets')"><span class="arrow">→</span> Markets</span>
+          <span class="nav-link-chip" onclick="showToast('→ Simulate')"><span class="arrow">→</span> Simulate</span>
+          <span class="nav-link-chip" onclick="showToast('→ Alerts')"><span class="arrow">→</span> Alerts</span>
+          <span class="nav-link-chip" onclick="showToast('→ Risk Profile')"><span class="arrow">→</span> Risk Profile</span>
+          <span class="nav-link-chip" onclick="showToast('→ Settings')"><span class="arrow">→</span> Settings</span>
+        </div>
+      </div>
+
+      <!-- B2: Markets -->
+      <div class="screen" id="screen-markets">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">markets</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Markets</h3>
+          <div class="ui-field search-field"><span>🔍</span> Search symbol or name…</div>
+          <p class="ui-label">Watchlist</p>
+          <div class="list-item" onclick="showToast('Opening SPY detail…')">
+            <div><div class="list-ticker green-text">SPY</div><div class="list-name">S&amp;P 500 ETF</div></div>
+            <div class="list-right"><div>$521.30</div><span class="chip chip-green">+0.6%</span></div>
+          </div>
+          <div class="list-item" onclick="showToast('Opening BTC detail…')">
+            <div><div class="list-ticker yellow-text">BTC</div><div class="list-name">Bitcoin</div></div>
+            <div class="list-right"><div>$63,400</div><span class="chip chip-green">+4.1%</span></div>
+          </div>
+          <div class="list-item" onclick="showToast('Opening META detail…')">
+            <div><div class="list-ticker red-text">META</div><div class="list-name">Meta</div></div>
+            <div class="list-right"><div>$490.20</div><span class="chip chip-red">−0.8%</span></div>
+          </div>
+          <hr class="ui-divider" />
+          <p class="ui-label">Real-Time Prices</p>
+          <div class="alert-item alert-green">✅ AAPL ↑ $189.40 · Live</div>
+          <div class="alert-item">BTC ↔ $63,400 · Stable</div>
+          <div class="rel-tag"><span class="rel-dot green-dot"></span>→ Stock Detail</div>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon active" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon" onclick="navTo('settings')">⚙️</button>
+        </nav>
+      </div>
+
+      <!-- B3: Stock Detail -->
+      <div class="screen" id="screen-stockdetail">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">stock_detail</span>
+        </div>
+        <div class="screen-body">
+          <div class="stock-top">
+            <div>
+              <div class="list-ticker green-text large-ticker">AAPL</div>
+              <div class="list-name">Apple Inc. · NASDAQ</div>
+            </div>
+            <div class="stock-price-block">
+              <div class="large-price">$189.40</div>
+              <span class="chip chip-green">+1.2% today</span>
+            </div>
+          </div>
+          <div class="candlestick-area" id="candles-detail">
+            <!-- candles injected by JS -->
+          </div>
+          <div class="timeframe-row">
+            <span class="chip chip-green active-tf" data-tf="1D" onclick="setTimeframe(this)">1D</span>
+            <span class="chip chip-dim" data-tf="1W" onclick="setTimeframe(this)">1W</span>
+            <span class="chip chip-dim" data-tf="1M" onclick="setTimeframe(this)">1M</span>
+            <span class="chip chip-dim" data-tf="1Y" onclick="setTimeframe(this)">1Y</span>
+          </div>
+          <div class="stat-row">
+            <div class="stat-box"><div class="stat-val">$186</div><div class="stat-lbl">Open</div></div>
+            <div class="stat-box"><div class="stat-val red-text">$185</div><div class="stat-lbl">Low</div></div>
+            <div class="stat-box"><div class="stat-val green-text">$191</div><div class="stat-lbl">High</div></div>
+          </div>
+          <div class="ui-field news-field">📰 Apple posts record Q2 earnings…</div>
+          <div class="rel-tag"><span class="rel-dot yellow-dot"></span>→ Set Alert</div>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon active" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon" onclick="navTo('settings')">⚙️</button>
+        </nav>
+      </div>
+
+    </div><!-- /row B -->
+
+
+    <!-- ROW C: Feature Screens -->
+    <h3 class="row-label">C · Feature Screens</h3>
+    <div class="screens-row">
+
+      <!-- C1: Simulated Trading -->
+      <div class="screen" id="screen-simulate">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">simulate_trade</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Simulated Trading</h3>
+          <p class="ui-small">Practice risk-free with virtual $10,000</p>
+          <div class="stat-row">
+            <div class="stat-box"><div class="stat-val green-text">$10,000</div><div class="stat-lbl">Virtual Cash</div></div>
+            <div class="stat-box"><div class="stat-val yellow-text">$200</div><div class="stat-lbl">Sim P&amp;L</div></div>
+          </div>
+          <div class="candlestick-area" id="candles-sim">
+            <!-- candles injected by JS -->
+          </div>
+          <label class="ui-label">Symbol</label>
+          <div class="ui-field"><span>📈</span> TSLA · $241.10</div>
+          <label class="ui-label">Shares</label>
+          <div class="ui-field"><span>#</span> 200</div>
+          <label class="ui-label">Take Profit / Stop Loss</label>
+          <div class="tp-sl-row">
+            <div class="ui-field green-border tp-field">TP: $260</div>
+            <div class="ui-field red-border sl-field">SL: $220</div>
+          </div>
+          <div class="sim-btn-row">
+            <button class="sim-btn sim-buy" onclick="showToast('BUY order placed in simulation!')">BUY</button>
+            <button class="sim-btn sim-sell" onclick="showToast('SELL 100 shares in simulation!')">SELL · 100</button>
+          </div>
+          <div class="rel-tag"><span class="rel-dot purple-dot"></span>→ Simulation History</div>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon active" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon" onclick="navTo('settings')">⚙️</button>
+        </nav>
+      </div>
+
+      <!-- C2: Alerts -->
+      <div class="screen" id="screen-alerts">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">alerts</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Alerts</h3>
+          <p class="ui-small">Price alerts &amp; portfolio notifications</p>
+          <p class="ui-label">Active Alerts</p>
+          <div class="alert-item alert-green">✅ AAPL crossed $190 target</div>
+          <div class="alert-item alert-red">⚠️ TSLA dropped below $240</div>
+          <div class="alert-item">📰 Fed rate decision at 2PM</div>
+          <hr class="ui-divider" />
+          <p class="ui-label">Create New Alert</p>
+          <div class="ui-field"><span>🔍</span> Ticker symbol</div>
+          <div class="alert-create-row">
+            <div class="ui-field half-field"><span>↑</span> Above</div>
+            <div class="ui-field half-field"><span>$</span> Target price</div>
+          </div>
+          <button class="btn btn-primary" onclick="showToast('Alert set!')">Set Alert</button>
+          <div class="toggle-row">
+            <span class="ui-text">Push Notifications</span>
+            <div class="toggle on" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="toggle-row">
+            <span class="ui-text">Email Alerts</span>
+            <div class="toggle on" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="rel-tag"><span class="rel-dot yellow-dot"></span>→ Manage Alert Rules</div>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon active" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon" onclick="navTo('settings')">⚙️</button>
+        </nav>
+      </div>
+
+      <!-- C3: Risk Profile -->
+      <div class="screen" id="screen-risk">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">risk_profile</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Risk Profile</h3>
+          <p class="ui-small">Your investment risk assessment</p>
+          <div class="risk-gauge-box">
+            <p class="ui-label">Current Profile</p>
+            <div class="risk-score-label">MODERATE</div>
+            <div class="gauge-bar"><div class="gauge-needle"></div></div>
+            <div class="gauge-scale"><span>Conservative</span><span>Aggressive</span></div>
+          </div>
+          <p class="ui-label">Asset Allocation</p>
+          <div class="stat-row">
+            <div class="stat-box"><div class="stat-val green-text">55%</div><div class="stat-lbl">Stocks</div></div>
+            <div class="stat-box"><div class="stat-val blue-text">25%</div><div class="stat-lbl">ETFs</div></div>
+            <div class="stat-box"><div class="stat-val yellow-text">20%</div><div class="stat-lbl">Crypto</div></div>
+          </div>
+          <p class="ui-label">P&amp;L Analytics</p>
+          <div class="mini-chart" id="chart-risk">
+            <!-- bars injected by JS -->
+          </div>
+          <button class="btn btn-outline small-btn" onclick="showToast('Retaking assessment…')">Retake Risk Assessment</button>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon active" onclick="navTo('settings')">⚙️</button>
+        </nav>
+      </div>
+
+      <!-- C4: Settings -->
+      <div class="screen" id="screen-settings">
+        <div class="screen-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="screen-title">settings_security</span>
+        </div>
+        <div class="screen-body">
+          <h3 class="ui-heading">Settings</h3>
+          <p class="ui-small">Security / Account Details</p>
+          <p class="ui-label">Security</p>
+          <div class="toggle-row">
+            <span class="ui-text">Biometrics</span>
+            <div class="toggle on" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="toggle-row">
+            <span class="ui-text">2FA Enabled</span>
+            <div class="toggle on" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+          </div>
+          <hr class="ui-divider" />
+          <p class="ui-label">Account</p>
+          <div class="list-item">
+            <span class="ui-text">Email</span>
+            <span class="ui-dim">N*****@gmail.com</span>
+          </div>
+          <button class="btn btn-outline small-btn" onclick="showToast('Changing email…')">Change Email</button>
+          <div class="list-item">
+            <span class="ui-text">Password</span>
+            <span class="ui-dim">••••••••••</span>
+          </div>
+          <button class="btn btn-outline small-btn" onclick="showToast('Changing password…')">Change Password</button>
+          <hr class="ui-divider" />
+          <div class="toggle-row">
+            <span class="ui-text">Disable Alerts</span>
+            <div class="toggle off" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+          </div>
+          <hr class="ui-divider" />
+          <button class="btn btn-danger" onclick="showToast('Signed out!')">Sign Out</button>
+        </div>
+        <nav class="nav-bar">
+          <button class="nav-icon" onclick="navTo('dashboard')">🏠</button>
+          <button class="nav-icon" onclick="navTo('markets')">📊</button>
+          <button class="nav-icon" onclick="navTo('simulate')">🎮</button>
+          <button class="nav-icon" onclick="navTo('alerts')">🔔</button>
+          <button class="nav-icon active" onclick="navTo('settings')">⚙️</button>
+        </nav>
+      </div>
+
+    </div><!-- /row C -->
+
+
+    <!-- ───────────────────────────────
+         SECTION 3: RELATIONSHIP SUMMARY
+    ─────────────────────────────── -->
+    <h2 class="section-label">03 — Page Relationship Summary</h2>
+    <div class="flow-section">
+      <div class="rel-grid">
+
+        <div class="rel-card">
+          <div class="rel-card-title blue-text">🔐 AUTH FLOW</div>
+          <p class="ui-text">Splash → Create Account → Risk Profile Setup → Dashboard</p>
+          <p class="ui-text">Splash → Login → 2FA / Biometric → Dashboard</p>
+        </div>
+
+        <div class="rel-card">
+          <div class="rel-card-title purple-text">🏠 DASHBOARD HUB</div>
+          <p class="ui-text">Central hub connecting to all 5 main feature areas via the bottom navigation bar and tappable holdings list.</p>
+        </div>
+
+        <div class="rel-card">
+          <div class="rel-card-title green-text">📊 MARKETS FLOW</div>
+          <p class="ui-text">Markets &amp; Watchlist → Stock Detail &amp; Chart → Set Price Alert (→ Alerts screen)</p>
+        </div>
+
+        <div class="rel-card">
+          <div class="rel-card-title purple-text">🎮 SIMULATION FLOW</div>
+          <p class="ui-text">Simulated Trading → Simulation History. Uses real-time price data from Markets but executes on virtual balance only.</p>
+        </div>
+
+        <div class="rel-card">
+          <div class="rel-card-title yellow-text">🔔 ALERTS FLOW</div>
+          <p class="ui-text">Alerts page ↔ Manage Alert Rules. Alerts also triggered from Stock Detail. Push &amp; email notifications delivered via encrypted API.</p>
+        </div>
+
+        <div class="rel-card">
+          <div class="rel-card-title yellow-text">🧠 RISK &amp; ⚙️ SETTINGS</div>
+          <p class="ui-text">Risk Profile shows P&amp;L analytics and asset allocation. Settings manages 2FA, biometrics, password, email, and sign out.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast notification (injected by JS) -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
