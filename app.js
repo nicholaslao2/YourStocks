@@ -1,6 +1,4 @@
-// Simple in-memory "storage" plus localStorage for demo persistence
-const STORAGE_KEY = "yourstocks-demo-data";
-
+// --- STATE ---
 let state = {
   user: null,
   portfolio: [],
@@ -9,293 +7,218 @@ let state = {
   riskProfile: null
 };
 
-function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
-  try {
-    const parsed = JSON.parse(raw);
-    state = { ...state, ...parsed };
-  } catch {
-    // ignore parse errors
-  }
+function save() {
+  localStorage.setItem("YS", JSON.stringify(state));
 }
 
-function saveState() {
-  const toSave = {
-    user: state.user,
-    portfolio: state.portfolio,
-    simCash: state.simCash,
-    simHistory: state.simHistory,
-    riskProfile: state.riskProfile
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+function load() {
+  const raw = localStorage.getItem("YS");
+  if (raw) state = { ...state, ...JSON.parse(raw) };
+}
+load();
+
+// --- AUTH ---
+const authScreen = document.getElementById("auth-screen");
+const screens = document.querySelectorAll(".screen");
+
+function showScreen(id) {
+  screens.forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-// Utility: format currency
-function fmt(n) {
-  return "$" + n.toFixed(2);
-}
+document.getElementById("login-btn").onclick = () => {
+  const u = document.getElementById("auth-username").value;
+  const p = document.getElementById("auth-password").value;
 
-// Authentication (very simple, demo only)
-const authSection = document.getElementById("auth-section");
-const appMain = document.getElementById("app");
-const authForm = document.getElementById("auth-form");
-const authMsg = document.getElementById("auth-message");
-const loginBtn = document.getElementById("login-btn");
-const signupBtn = document.getElementById("signup-btn");
+  if (!u || !p) return;
 
-let authMode = "login"; // or "signup"
-
-signupBtn.addEventListener("click", () => {
-  authMode = "signup";
-  authMsg.textContent = "Creating a new demo account (stored locally only).";
-});
-
-loginBtn.addEventListener("click", () => {
-  authMode = "login";
-});
-
-authForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  if (!username || !password) return;
-
-  // For demo: any username/password logs in and is stored locally
-  state.user = { username };
-  saveState();
-  authSection.classList.add("hidden");
-  appMain.classList.remove("hidden");
+  state.user = { username: u };
+  save();
+  authScreen.classList.remove("active");
+  showScreen("dashboard");
   renderAll();
+};
+
+document.getElementById("signup-btn").onclick = () => {
+  const u = document.getElementById("auth-username").value;
+  const p = document.getElementById("auth-password").value;
+
+  if (!u || !p) return;
+
+  state.user = { username: u };
+  save();
+  authScreen.classList.remove("active");
+  showScreen("dashboard");
+  renderAll();
+};
+
+// --- NAV ---
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.target;
+    if (target) showScreen(target);
+    if (btn.classList.contains("logout-btn")) {
+      state.user = null;
+      save();
+      location.reload();
+    }
+  };
 });
 
-// Portfolio & prices
-const portfolioBody = document.getElementById("portfolio-body");
-const totalValueEl = document.getElementById("total-value");
-const alertsLog = document.getElementById("alerts-log");
-
-document.getElementById("add-stock-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const ticker = document.getElementById("ticker-input").value.trim().toUpperCase();
-  const qty = parseInt(document.getElementById("quantity-input").value, 10);
-
-  if (!ticker || qty <= 0) return;
-
-  const existing = state.portfolio.find((p) => p.ticker === ticker);
-  if (existing) {
-    existing.quantity += qty;
-  } else {
-    state.portfolio.push({
-      ticker,
-      quantity: qty,
-      price: randomPrice(),
-      alertPrice: ""
-    });
-  }
-  saveState();
-  renderPortfolio();
-  renderTotals();
-  e.target.reset();
-});
-
+// --- PORTFOLIO ---
 function randomPrice() {
-  return 20 + Math.random() * 180; // simple range
+  return 20 + Math.random() * 200;
 }
 
 function updatePrices() {
-  state.portfolio.forEach((item) => {
-    // Simulate small random movement
-    const change = (Math.random() - 0.5) * 2;
-    item.price = Math.max(1, item.price + change);
-    checkAlert(item);
+  state.portfolio.forEach(p => {
+    p.price += (Math.random() - 0.5) * 2;
+    if (p.alert && p.price >= p.alert && !p.hit) {
+      p.hit = true;
+      const log = document.getElementById("alerts-log");
+      log.innerHTML = `<div>🔔 ${p.ticker} hit ${p.alert}</div>` + log.innerHTML;
+    }
   });
   renderPortfolio();
   renderTotals();
-  saveState();
+  save();
 }
 
-function checkAlert(item) {
-  if (!item.alertPrice) return;
-  const alertPrice = parseFloat(item.alertPrice);
-  if (isNaN(alertPrice)) return;
+setInterval(updatePrices, 3000);
 
-  if (item.price >= alertPrice && !item._alerted) {
-    item._alerted = true;
-    const entry = document.createElement("div");
-    entry.className = "alerts-log-entry";
-    entry.textContent = `Alert: ${item.ticker} has reached ${fmt(item.price)} (alert price ${fmt(alertPrice)}).`;
-    alertsLog.prepend(entry);
-  }
-}
+document.getElementById("add-stock-form").onsubmit = e => {
+  e.preventDefault();
+  const t = document.getElementById("ticker-input").value.toUpperCase();
+  const q = parseInt(document.getElementById("quantity-input").value);
+
+  if (!t || q <= 0) return;
+
+  const existing = state.portfolio.find(x => x.ticker === t);
+  if (existing) existing.quantity += q;
+  else state.portfolio.push({ ticker: t, quantity: q, price: randomPrice() });
+
+  save();
+  renderPortfolio();
+  renderTotals();
+};
 
 function renderPortfolio() {
-  portfolioBody.innerHTML = "";
-  state.portfolio.forEach((item, idx) => {
+  const body = document.getElementById("portfolio-body");
+  body.innerHTML = "";
+
+  state.portfolio.forEach((p, i) => {
     const tr = document.createElement("tr");
-
-    const value = item.price * item.quantity;
-
     tr.innerHTML = `
-      <td>${item.ticker}</td>
-      <td>${item.quantity}</td>
-      <td>${fmt(item.price)}</td>
-      <td>${fmt(value)}</td>
-      <td>
-        <input type="number" step="0.01" value="${item.alertPrice || ""}" data-idx="${idx}" class="alert-input" />
-      </td>
-      <td>
-        <button data-idx="${idx}" class="set-alert-btn">Save</button>
-      </td>
-      <td>
-        <button data-idx="${idx}" class="remove-stock-btn">X</button>
-      </td>
+      <td>${p.ticker}</td>
+      <td>${p.quantity}</td>
+      <td>$${p.price.toFixed(2)}</td>
+      <td>$${(p.price * p.quantity).toFixed(2)}</td>
+      <td><input data-i="${i}" class="alert-input" value="${p.alert || ""}" /></td>
+      <td><button data-i="${i}" class="remove-btn">X</button></td>
     `;
-    portfolioBody.appendChild(tr);
+    body.appendChild(tr);
   });
 
-  // Wire up alert inputs and remove buttons
-  portfolioBody.querySelectorAll(".alert-input").forEach((input) => {
-    input.addEventListener("change", (e) => {
-      const idx = parseInt(e.target.getAttribute("data-idx"), 10);
-      state.portfolio[idx].alertPrice = e.target.value;
-      state.portfolio[idx]._alerted = false;
-      saveState();
-    });
+  document.querySelectorAll(".alert-input").forEach(inp => {
+    inp.onchange = () => {
+      const i = inp.dataset.i;
+      state.portfolio[i].alert = parseFloat(inp.value);
+      state.portfolio[i].hit = false;
+      save();
+    };
   });
 
-  portfolioBody.querySelectorAll(".set-alert-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const idx = parseInt(e.target.getAttribute("data-idx"), 10);
-      const rowInput = portfolioBody.querySelector(`.alert-input[data-idx="${idx}"]`);
-      state.portfolio[idx].alertPrice = rowInput.value;
-      state.portfolio[idx]._alerted = false;
-      saveState();
-    });
-  });
-
-  portfolioBody.querySelectorAll(".remove-stock-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const idx = parseInt(e.target.getAttribute("data-idx"), 10);
-      state.portfolio.splice(idx, 1);
-      saveState();
+  document.querySelectorAll(".remove-btn").forEach(btn => {
+    btn.onclick = () => {
+      state.portfolio.splice(btn.dataset.i, 1);
+      save();
       renderPortfolio();
       renderTotals();
-    });
+    };
   });
 }
 
 function renderTotals() {
-  const total = state.portfolio.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  totalValueEl.textContent = fmt(total);
-  document.getElementById("sim-cash").textContent = fmt(state.simCash);
+  const total = state.portfolio.reduce((s, p) => s + p.price * p.quantity, 0);
+  document.getElementById("total-value").textContent = "$" + total.toFixed(2);
+  document.getElementById("sim-cash").textContent = "$" + state.simCash.toFixed(2);
 }
 
-// Risk profile
-const riskForm = document.getElementById("risk-form");
-const riskResult = document.getElementById("risk-result");
-const riskProfileDisplay = document.getElementById("risk-profile-display");
-
-riskForm.addEventListener("submit", (e) => {
+// --- RISK PROFILE ---
+document.getElementById("risk-form").onsubmit = e => {
   e.preventDefault();
-  const q1 = document.getElementById("q1").value;
-  const q2 = document.getElementById("q2").value;
-  const q3 = document.getElementById("q3").value;
+  const q1 = q1.value, q2 = q2.value, q3 = q3.value;
 
-  if (!q1 || !q2 || !q3) return;
-
-  const scores = { low: 0, medium: 0, high: 0 };
-  [q1, q2, q3].forEach((ans) => {
-    scores[ans]++;
-  });
+  const score = [q1, q2, q3].filter(x => x === "high").length;
 
   let profile = "Conservative";
-  if (scores.high >= 2) profile = "Aggressive";
-  else if (scores.medium >= 2 || scores.high === 1) profile = "Balanced";
+  if (score === 1) profile = "Balanced";
+  if (score >= 2) profile = "Aggressive";
 
   state.riskProfile = profile;
-  saveState();
+  save();
 
-  riskResult.textContent = `Your risk profile is: ${profile}.`;
-  riskProfileDisplay.textContent = profile;
-});
+  document.getElementById("risk-result").textContent = "Your profile: " + profile;
+  document.getElementById("risk-profile-display").textContent = profile;
+};
 
-// Simulation trading
-const simForm = document.getElementById("sim-trade-form");
-const simHistoryBody = document.getElementById("sim-history-body");
-
-simForm.addEventListener("submit", (e) => {
+// --- SIM TRADING ---
+document.getElementById("sim-trade-form").onsubmit = e => {
   e.preventDefault();
-  const ticker = document.getElementById("sim-ticker").value.trim().toUpperCase();
-  const qty = parseInt(document.getElementById("sim-quantity").value, 10);
-  const side = document.getElementById("sim-side").value;
-
-  if (!ticker || qty <= 0) return;
+  const t = simTicker.value.toUpperCase();
+  const q = parseInt(simQuantity.value);
+  const side = simSide.value;
 
   const price = randomPrice();
-  const value = price * qty;
+  const value = price * q;
 
-  if (side === "buy" && value > state.simCash) {
-    alert("Not enough simulated cash for this trade.");
-    return;
-  }
+  if (side === "buy" && value > state.simCash) return alert("Not enough cash");
 
-  if (side === "buy") {
-    state.simCash -= value;
-  } else {
-    state.simCash += value;
-  }
+  if (side === "buy") state.simCash -= value;
+  else state.simCash += value;
 
-  const trade = {
+  state.simHistory.unshift({
     time: new Date().toLocaleTimeString(),
-    ticker,
+    ticker: t,
     side,
-    quantity: qty,
+    quantity: q,
     price,
     value
-  };
+  });
 
-  state.simHistory.unshift(trade);
-  saveState();
+  save();
   renderSimHistory();
   renderTotals();
-  e.target.reset();
-});
+};
 
 function renderSimHistory() {
-  simHistoryBody.innerHTML = "";
-  state.simHistory.forEach((t) => {
+  const body = document.getElementById("sim-history-body");
+  body.innerHTML = "";
+  state.simHistory.forEach(t => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${t.time}</td>
       <td>${t.ticker}</td>
-      <td>${t.side.toUpperCase()}</td>
+      <td>${t.side}</td>
       <td>${t.quantity}</td>
-      <td>${fmt(t.price)}</td>
-      <td>${fmt(t.value)}</td>
+      <td>$${t.price.toFixed(2)}</td>
+      <td>$${t.value.toFixed(2)}</td>
     `;
-    simHistoryBody.appendChild(tr);
+    body.appendChild(tr);
   });
 }
 
-// Initialisation
+// --- INIT ---
 function renderAll() {
   renderPortfolio();
   renderTotals();
   renderSimHistory();
-  if (state.riskProfile) {
-    riskProfileDisplay.textContent = state.riskProfile;
-    riskResult.textContent = `Your risk profile is: ${state.riskProfile}.`;
-  }
+  if (state.riskProfile)
+    document.getElementById("risk-profile-display").textContent = state.riskProfile;
 }
 
-// Load state and show app if user exists
-loadState();
 if (state.user) {
-  authSection.classList.add("hidden");
-  appMain.classList.remove("hidden");
+  authScreen.classList.remove("active");
+  showScreen("dashboard");
   renderAll();
 }
-
-// Simulated real-time price updates
-setInterval(updatePrices, 3000);
