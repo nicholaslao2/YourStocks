@@ -5,192 +5,153 @@
   <title>YourStocks</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <header class="app-header">
-    <h1>YourStocks</h1>
-    <p class="tagline">A unified view of your investment portfolio</p>
-  </header>
+  <div class="sidebar">
+    <h1 class="logo">YourStocks</h1>
+    <nav>
+      <button class="nav-btn" data-target="dashboard">Dashboard</button>
+      <button class="nav-btn" data-target="portfolio">Portfolio</button>
+      <button class="nav-btn" data-target="risk">Risk Profile</button>
+      <button class="nav-btn" data-target="sim">Simulation</button>
+      <button class="nav-btn logout-btn">Logout</button>
+    </nav>
+  </div>
 
-  <!-- Authentication: create account / login -->
-  <section id="auth-section" class="card">
-    <h2>Account Access</h2>
-    <form id="auth-form">
-      <label>
-        Username
-        <input type="text" id="username" required />
-      </label>
-      <label>
-        Password
-        <input type="password" id="password" required />
-      </label>
-      <div class="auth-actions">
-        <button type="submit" id="login-btn">Log In</button>
-        <button type="button" id="signup-btn" class="secondary">Create Account</button>
+  <div class="main">
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="screen active">
+      <div class="auth-card glass">
+        <h2>Welcome to YourStocks</h2>
+        <p class="sub">Your entire portfolio, unified.</p>
+
+        <input id="auth-username" placeholder="Username" />
+        <input id="auth-password" type="password" placeholder="Password" />
+
+        <button id="login-btn" class="primary">Log In</button>
+        <button id="signup-btn" class="secondary">Create Account</button>
+
+        <p id="auth-msg"></p>
       </div>
-    </form>
-    <p id="auth-message" class="info-text"></p>
-  </section>
+    </div>
 
-  <!-- Main app content -->
-  <main id="app" class="hidden">
-    <section class="card">
-      <h2>Portfolio Dashboard</h2>
-      <p class="info-text">
-        Single dashboard summarising your portfolio performance and simulated trading results.
-      </p>
-      <div class="dashboard-summary">
-        <div>
-          <span class="summary-label">Total Portfolio Value:</span>
-          <span id="total-value">$0.00</span>
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="screen">
+      <h2 class="section-title">Dashboard</h2>
+      <div class="grid">
+        <div class="glass card">
+          <h3>Total Portfolio Value</h3>
+          <p id="total-value" class="big-number">$0.00</p>
         </div>
-        <div>
-          <span class="summary-label">Simulated Cash Balance:</span>
-          <span id="sim-cash">$100,000.00</span>
+
+        <div class="glass card">
+          <h3>Simulated Cash</h3>
+          <p id="sim-cash" class="big-number">$100,000.00</p>
         </div>
-        <div>
-          <span class="summary-label">Risk Profile:</span>
-          <span id="risk-profile-display">Not assessed</span>
+
+        <div class="glass card">
+          <h3>Risk Profile</h3>
+          <p id="risk-profile-display" class="big-number">Not Assessed</p>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Portfolio management & real-time data -->
-    <section class="card">
-      <h2>Portfolio Management & Real‑Time Prices</h2>
-      <form id="add-stock-form" class="inline-form">
-        <label>
-          Ticker
-          <input type="text" id="ticker-input" placeholder="e.g. AAPL" required />
-        </label>
-        <label>
-          Quantity
-          <input type="number" id="quantity-input" min="1" value="1" required />
-        </label>
-        <button type="submit">Add to Portfolio</button>
-      </form>
+    <!-- PORTFOLIO -->
+    <div id="portfolio" class="screen">
+      <h2 class="section-title">Portfolio</h2>
 
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Ticker</th>
-            <th>Quantity</th>
-            <th>Current Price</th>
-            <th>Position Value</th>
-            <th>Alert Price</th>
-            <th>Set Alert</th>
-            <th>Remove</th>
-          </tr>
-        </thead>
-        <tbody id="portfolio-body">
-          <!-- Filled by JS -->
-        </tbody>
-      </table>
+      <div class="glass card">
+        <form id="add-stock-form" class="inline-form">
+          <input id="ticker-input" placeholder="Ticker (AAPL)" />
+          <input id="quantity-input" type="number" min="1" value="1" />
+          <button class="primary">Add</button>
+        </form>
 
-      <p class="info-text">
-        Prices are updated in real time (simulated) and alerts are triggered when your alert price is reached.
-      </p>
-      <div id="alerts-log" class="alerts-log"></div>
-    </section>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Value</th>
+              <th>Alert</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-body"></tbody>
+        </table>
 
-    <!-- Risk-profile assessment -->
-    <section class="card">
-      <h2>Risk‑Profile Assessment</h2>
-      <p class="info-text">
-        Answer a few questions to understand your risk profile clearly.
-      </p>
-      <form id="risk-form">
-        <div class="question">
-          <label>1. What is your investment horizon?</label>
-          <select id="q1" required>
-            <option value="">Select…</option>
-            <option value="low">Less than 1 year</option>
-            <option value="medium">1–5 years</option>
-            <option value="high">More than 5 years</option>
+        <div id="alerts-log" class="alerts-log"></div>
+      </div>
+    </div>
+
+    <!-- RISK PROFILE -->
+    <div id="risk" class="screen">
+      <h2 class="section-title">Risk Profile</h2>
+
+      <div class="glass card">
+        <form id="risk-form">
+          <select id="q1">
+            <option value="">Investment Horizon</option>
+            <option value="low">Short</option>
+            <option value="medium">Medium</option>
+            <option value="high">Long</option>
           </select>
-        </div>
 
-        <div class="question">
-          <label>2. How would you react to a 20% drop in your portfolio?</label>
-          <select id="q2" required>
-            <option value="">Select…</option>
-            <option value="low">Sell to avoid further losses</option>
-            <option value="medium">Hold and wait</option>
-            <option value="high">Buy more at lower prices</option>
+          <select id="q2">
+            <option value="">Reaction to Drop</option>
+            <option value="low">Sell</option>
+            <option value="medium">Hold</option>
+            <option value="high">Buy More</option>
           </select>
-        </div>
 
-        <div class="question">
-          <label>3. What level of volatility are you comfortable with?</label>
-          <select id="q3" required>
-            <option value="">Select…</option>
+          <select id="q3">
+            <option value="">Volatility Comfort</option>
             <option value="low">Low</option>
             <option value="medium">Moderate</option>
             <option value="high">High</option>
           </select>
-        </div>
 
-        <button type="submit">Analyse Risk Profile</button>
-      </form>
-      <p id="risk-result" class="info-text"></p>
-    </section>
+          <button class="primary">Analyse</button>
+        </form>
 
-    <!-- Simulation trading -->
-    <section class="card">
-      <h2>Simulation Trading</h2>
-      <p class="info-text">
-        Practise trading safely with simulated orders—no real money involved.
-      </p>
-      <form id="sim-trade-form" class="inline-form">
-        <label>
-          Ticker
-          <input type="text" id="sim-ticker" placeholder="e.g. TSLA" required />
-        </label>
-        <label>
-          Quantity
-          <input type="number" id="sim-quantity" min="1" value="1" required />
-        </label>
-        <label>
-          Side
+        <p id="risk-result"></p>
+      </div>
+    </div>
+
+    <!-- SIMULATION -->
+    <div id="sim" class="screen">
+      <h2 class="section-title">Simulation Trading</h2>
+
+      <div class="glass card">
+        <form id="sim-trade-form" class="inline-form">
+          <input id="sim-ticker" placeholder="Ticker" />
+          <input id="sim-quantity" type="number" min="1" value="1" />
           <select id="sim-side">
             <option value="buy">Buy</option>
             <option value="sell">Sell</option>
           </select>
-        </label>
-        <button type="submit">Place Simulated Trade</button>
-      </form>
+          <button class="primary">Trade</button>
+        </form>
 
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Ticker</th>
-            <th>Side</th>
-            <th>Quantity</th>
-            <th>Price</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody id="sim-history-body">
-          <!-- Filled by JS -->
-        </tbody>
-      </table>
-    </section>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Ticker</th>
+              <th>Side</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="sim-history-body"></tbody>
+        </table>
+      </div>
+    </div>
 
-    <!-- Transmission & storage explanation (informational only) -->
-    <section class="card">
-      <h2>Input, Output, Transmission & Storage</h2>
-      <ul class="io-list">
-        <li><strong>Input:</strong> Usernames, passwords, portfolios, preferences, risk answers, and market data (prices, news).</li>
-        <li><strong>Output:</strong> Stock price changes, alerts, risk‑profile results, dashboard summary, and simulated trading outcomes.</li>
-        <li><strong>Transmission:</strong> Encrypted API calls for market data, authentication, syncing, and push‑style alerts (simulated here).</li>
-        <li><strong>Storage:</strong> Customer accounts, portfolios, preferences, risk assessments, and simulation history (stored here in browser memory/local storage for demo).</li>
-      </ul>
-    </section>
-  </main>
-
-  <footer class="app-footer">
-    <p>YourStocks &mdash; fast, secure, easy to use, and designed for reliable real‑time portfolio insight.</p>
-  </footer>
+  </div>
 
   <script src="app.js"></script>
 </body>
