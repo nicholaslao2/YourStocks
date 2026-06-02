@@ -1,317 +1,257 @@
-/* ═══════════════════════════════════════════════════
-   script.js  —  YourStocks Wireframe
-   Purpose: Page behaviour, dynamic rendering, interactions
-═══════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────
-   1. TOAST NOTIFICATION
-   Shows a temporary message at the bottom of screen
-───────────────────────────────────────────────── */
-
-let toastTimer = null;
-
-/**
- * Display a brief toast message.
- * @param {string} message - Text to show
- * @param {number} duration - How long to show it (ms)
- */
-function showToast(message, duration = 2200) {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-
-  // Clear any existing timer so messages don't stack
-  clearTimeout(toastTimer);
-
-  toast.textContent = message;
-  toast.classList.add('visible');
-
-  toastTimer = setTimeout(() => {
-    toast.classList.remove('visible');
-  }, duration);
-}
-
-
-/* ─────────────────────────────────────────────────
-   2. BOTTOM NAV FEEDBACK
-   Highlights the tapped nav button and shows a toast
-───────────────────────────────────────────────── */
-
-const NAV_LABELS = {
-  dashboard: '🏠 Dashboard',
-  markets:   '📊 Markets',
-  simulate:  '🎮 Simulated Trading',
-  alerts:    '🔔 Alerts',
-  settings:  '⚙️ Settings',
+// --- Application Storage Default State Architecture ---
+let appState = {
+    user: null,
+    marketData: {
+        AAPL: { name: "Apple", price: 175.50, change: 1.2 },
+        MSFT: { name: "Microsoft", price: 415.20, change: -0.4 },
+        GOOGL: { name: "Alphabet", price: 152.10, change: 0.8 },
+        AMZN: { name: "Amazon", price: 178.40, change: 1.5 }
+    },
+    portfolio: [
+        { symbol: "AAPL", shares: 40, avgBuy: 170.00 },
+        { symbol: "MSFT", shares: 10, avgBuy: 410.00 }
+    ],
+    alerts: [],
+    riskAssessment: null,
+    simCash: 10000.00,
+    simHistory: []
 };
 
-/**
- * Called when a nav bar button is tapped.
- * @param {string} page - key from NAV_LABELS
- */
-function navTo(page) {
-  showToast(`Navigating to ${NAV_LABELS[page] || page}…`);
-
-  // Highlight the active button in every nav bar that has this page's button
-  document.querySelectorAll('.nav-bar').forEach(bar => {
-    bar.querySelectorAll('.nav-icon').forEach((btn, index) => {
-      const pages = ['dashboard', 'markets', 'simulate', 'alerts', 'settings'];
-      btn.classList.toggle('active', pages[index] === page);
-    });
-  });
-}
-
-
-/* ─────────────────────────────────────────────────
-   3. TOGGLE SWITCHES
-   Flip on/off state for notification toggles
-───────────────────────────────────────────────── */
-
-/**
- * Toggle a switch element between on/off.
- * @param {HTMLElement} el - The .toggle element
- */
-function toggleSwitch(el) {
-  const isOn = el.classList.contains('on');
-  el.classList.toggle('on', !isOn);
-  el.classList.toggle('off', isOn);
-
-  // Derive a label from the parent row's text content
-  const label = el.closest('.toggle-row')
-    ?.querySelector('.ui-text')?.textContent?.trim() || 'Setting';
-
-  showToast(`${label}: ${isOn ? 'OFF' : 'ON'}`);
-}
-
-
-/* ─────────────────────────────────────────────────
-   4. CHIP SELECTOR (Risk Profile Questions)
-   Lets the user pick one chip per question group
-───────────────────────────────────────────────── */
-
-/**
- * Highlight the selected chip within its .chip-row group.
- * @param {HTMLElement} chip - The clicked chip
- */
-function selectChip(chip) {
-  const row = chip.closest('.chip-row');
-  if (!row) return;
-
-  // Deselect siblings
-  row.querySelectorAll('.chip').forEach(c => {
-    c.style.outline = 'none';
-    c.style.boxShadow = 'none';
-  });
-
-  // Highlight selected
-  chip.style.outline = '2px solid var(--accent)';
-  chip.style.boxShadow = '0 0 6px rgba(0,229,160,0.35)';
-
-  showToast(`Selected: "${chip.textContent}"`);
-}
-
-
-/* ─────────────────────────────────────────────────
-   5. TIMEFRAME SELECTOR (Stock Detail)
-   Switches active timeframe chip
-───────────────────────────────────────────────── */
-
-/**
- * Set the active timeframe chip.
- * @param {HTMLElement} chip - The clicked timeframe chip
- */
-function setTimeframe(chip) {
-  const row = chip.closest('.timeframe-row');
-  if (!row) return;
-
-  row.querySelectorAll('.chip').forEach(c => {
-    c.classList.remove('active-tf', 'chip-green');
-    c.classList.add('chip-dim');
-  });
-
-  chip.classList.remove('chip-dim');
-  chip.classList.add('chip-green', 'active-tf');
-
-  showToast(`Chart timeframe: ${chip.dataset.tf}`);
-}
-
-
-/* ─────────────────────────────────────────────────
-   6. MINI BAR CHART RENDERER
-   Injects animated bar chart HTML into a .mini-chart container
-───────────────────────────────────────────────── */
-
-/**
- * Data sets for different charts (height percentage 10–95).
- */
-const CHART_DATA = {
-  dashboard: [30, 45, 38, 55, 70, 60, 80, 90, 78, 95],
-  risk:      [40, 60, 50, 75, 85, 70, 95, 65, 80, 90],
-};
-
-/**
- * Render bars into a mini chart container.
- * @param {string} containerId - id of the .mini-chart element
- * @param {number[]} data      - array of heights (0–100)
- */
-function renderMiniChart(containerId, data) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  container.innerHTML = data
-    .map((h, i) => {
-      // Classify as up or down based on change from previous bar
-      const isUp = i === 0 || data[i] >= data[i - 1];
-      return `<div class="bar ${isUp ? 'bar-up' : 'bar-dn'}"
-                   style="height:${h}%; animation-delay:${i * 40}ms"></div>`;
-    })
-    .join('');
-}
-
-
-/* ─────────────────────────────────────────────────
-   7. CANDLESTICK CHART RENDERER
-   Injects candle SVG-like elements into a container
-───────────────────────────────────────────────── */
-
-/**
- * Candle definitions: { up: bool, bodyHeight: px }
- */
-const CANDLE_SETS = {
-  detail: [
-    { up: true,  bodyHeight: 20 },
-    { up: false, bodyHeight: 14 },
-    { up: true,  bodyHeight: 24 },
-    { up: true,  bodyHeight: 18 },
-    { up: false, bodyHeight: 10 },
-    { up: true,  bodyHeight: 28 },
-    { up: true,  bodyHeight: 32 },
-  ],
-  sim: [
-    { up: true,  bodyHeight: 16 },
-    { up: false, bodyHeight: 20 },
-    { up: true,  bodyHeight: 30 },
-    { up: true,  bodyHeight: 24 },
-    { up: false, bodyHeight: 18 },
-  ],
-};
-
-/**
- * Render candlestick chart elements into a container.
- * @param {string} containerId - id of .candlestick-area element
- * @param {Array}  candles     - array of { up, bodyHeight }
- */
-function renderCandlesticks(containerId, candles) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  container.innerHTML = candles
-    .map(c => {
-      const colour = c.up ? 'var(--accent)' : 'var(--red)';
-      return `
-        <div class="candle">
-          <div class="wick" style="background:${colour}"></div>
-          <div class="body" style="height:${c.bodyHeight}px; background:${colour}"></div>
-          <div class="wick" style="background:${colour}"></div>
-        </div>`;
-    })
-    .join('');
-}
-
-
-/* ─────────────────────────────────────────────────
-   8. LIVE PRICE TICKER (Dashboard)
-   Randomly nudges portfolio value every few seconds
-   to simulate real-time data updates
-───────────────────────────────────────────────── */
-
-const TICKERS = [
-  { id: 'tick-aapl', base: 189.40 },
-  { id: 'tick-tsla', base: 241.10 },
-  { id: 'tick-nvda', base: 875.00 },
-];
-
-/**
- * Nudge price by a small random delta.
- * @param {number} base  - Starting price
- * @returns {number}
- */
-function nudgePrice(base) {
-  const delta = (Math.random() - 0.48) * base * 0.002;
-  return Math.max(0, base + delta);
-}
-
-// Track current prices so changes compound
-const currentPrices = {};
-TICKERS.forEach(t => { currentPrices[t.id] = t.base; });
-
-/**
- * Update price elements in the dashboard holdings list.
- * Only runs if the elements exist in the DOM.
- */
-function tickPrices() {
-  TICKERS.forEach(t => {
-    const el = document.getElementById(t.id);
-    if (!el) return;
-
-    const prev = currentPrices[t.id];
-    const next = nudgePrice(prev);
-    currentPrices[t.id] = next;
-
-    el.textContent = `$${next.toFixed(2)}`;
-    el.style.color = next >= prev ? 'var(--accent)' : 'var(--red)';
-  });
-}
-
-// Attach live ids to dashboard list prices
-function attachTickerIds() {
-  const rows = document.querySelectorAll('#screen-dashboard .list-item');
-  const ids = ['tick-aapl', 'tick-tsla', 'tick-nvda'];
-  rows.forEach((row, i) => {
-    const priceEl = row.querySelector('.list-right div');
-    if (priceEl && ids[i]) priceEl.id = ids[i];
-  });
-}
-
-
-/* ─────────────────────────────────────────────────
-   9. GAUGE NEEDLE ANIMATION
-   Animates risk gauge needle on first view
-───────────────────────────────────────────────── */
-
-function animateGaugeNeedles() {
-  // Start at 0% and animate to final position
-  const needles = document.querySelectorAll('.gauge-needle');
-  needles.forEach(needle => {
-    needle.style.left = '0%';
-    setTimeout(() => {
-      needle.style.left = '60%';
-    }, 400);
-  });
-}
-
-
-/* ─────────────────────────────────────────────────
-   10. INITIALISATION
-   Runs once the DOM is fully loaded
-───────────────────────────────────────────────── */
-
-document.addEventListener('DOMContentLoaded', () => {
-
-  // Render charts
-  renderMiniChart('chart-dashboard', CHART_DATA.dashboard);
-  renderMiniChart('chart-risk', CHART_DATA.risk);
-
-  // Render candlesticks
-  renderCandlesticks('candles-detail', CANDLE_SETS.detail);
-  renderCandlesticks('candles-sim', CANDLE_SETS.sim);
-
-  // Attach ticker ids and start live ticking every 2.5 seconds
-  attachTickerIds();
-  setInterval(tickPrices, 2500);
-
-  // Animate gauge needles after short delay
-  setTimeout(animateGaugeNeedles, 600);
-
-  // Greet
-  console.log('%cYourStocks Wireframe loaded ✓', 'color:#00e5a0; font-family:monospace; font-size:14px;');
+// --- Initialization Layer ---
+document.addEventListener("DOMContentLoaded", () => {
+    loadFromStorage();
+    initMarketSimulation();
+    renderDashboard();
+    renderAlerts();
+    renderSimulation();
+    updateTradePrice();
 });
+
+// --- Functional: Navigation Tab Switching Logic ---
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active-tab'));
+    document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+    
+    document.getElementById(`${tabId}-tab`).classList.add('active-tab');
+    event.target.classList.add('active');
+}
+
+// --- Transmission & Input: Secure Authentication Layer Simulation ---
+function openAuthModal() {
+    document.getElementById('authModal').style.display = 'flex';
+}
+
+function closeAuthModal() {
+    document.getElementById('authModal').style.display = 'none';
+}
+
+function handleAuth(event) {
+    event.preventDefault();
+    const userIn = document.getElementById('username').value;
+    
+    // Simulating Secure API Request Channel transmission to authenticate user credentials
+    console.log("Transmitting encrypted user authentication structural token packet...");
+    
+    appState.user = userIn;
+    saveToStorage();
+    
+    document.getElementById('authStatus').innerHTML = `<span>Welcome, <strong>${userIn}</strong></span>`;
+    closeAuthModal();
+}
+
+// --- Transmission & Transmission Processing: Live Simulated Feed API System ---
+function initMarketSimulation() {
+    // Generates simulated live price updates continuously as the application runs
+    setInterval(() => {
+        for (let key in appState.marketData) {
+            let variance = (Math.random() - 0.5) * 2; 
+            appState.marketData[key].price = parseFloat((appState.marketData[key].price + variance).toFixed(2));
+        }
+        // Simulated structural output updates
+        renderDashboard();
+        updateTradePrice();
+        checkAlertTriggerConditions();
+    }, 4000); 
+}
+
+// --- Functional/Output: Dashboard View Syncing ---
+function renderDashboard() {
+    const feedEl = document.getElementById('marketFeed');
+    if(feedEl) {
+        feedEl.innerHTML = '';
+        for (let key in appState.marketData) {
+            let stock = appState.marketData[key];
+            feedEl.innerHTML += `<li><span><strong>${key}</strong>: $${stock.price}</span> <span class="badge ${stock.change >= 0 ? 'positive' : ''}">${stock.change}%</span></li>`;
+        }
+    }
+
+    const tableBody = document.querySelector('#portfolioTable tbody');
+    if(tableBody) {
+        tableBody.innerHTML = '';
+        let totalVal = 0;
+        
+        appState.portfolio.forEach(item => {
+            const currentPrice = appState.marketData[item.symbol].price;
+            const totalItemValue = item.shares * currentPrice;
+            const profitLoss = (currentPrice - item.avgBuy) * item.shares;
+            totalVal += totalItemValue;
+            
+            tableBody.innerHTML += `
+                <tr>
+                    <td><strong>${item.symbol}</strong></td>
+                    <td>${item.shares}</td>
+                    <td>$${item.avgBuy.toFixed(2)}</td>
+                    <td>$${currentPrice.toFixed(2)}</td>
+                    <td>$${totalItemValue.toFixed(2)}</td>
+                    <td style="color: ${profitLoss >= 0 ? 'var(--primary-green)' : 'red'}">$${profitLoss.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        document.getElementById('totalValue').innerText = `$${totalVal.toFixed(2)}`;
+    }
+}
+
+// --- Functional/Input: Risk Profile Calculation Rules ---
+function calculateRisk(event) {
+    event.preventDefault();
+    const q1 = parseInt(document.querySelector('input[name="q1"]:checked').value);
+    const q2 = parseInt(document.querySelector('input[name="q2"]:checked').value);
+    
+    const operationalScore = q1 + q2;
+    let computedProfile = "Conservative Profile";
+    
+    if (operationalScore > 4 && operationalScore <= 7) {
+        computedProfile = "Balanced Strategy Profile";
+    } else if (operationalScore > 7) {
+        computedProfile = "Aggressive Growth Profile";
+    }
+    
+    appState.riskAssessment = computedProfile;
+    saveToStorage();
+    
+    const resultBox = document.getElementById('riskResult');
+    resultBox.innerHTML = `<strong>Calculated Structural Outcome:</strong> Clear Risk Characterisation assigned as <strong>${computedProfile}</strong>. Disjointed evaluation error variables successfully removed.`;
+    resultBox.classList.remove('hidden');
+}
+
+// --- Functional/Input: Price Alerts Mechanism ---
+function createAlert(event) {
+    event.preventDefault();
+    const sym = document.getElementById('alertSymbol').value;
+    const cond = document.getElementById('alertCondition').value;
+    const price = parseFloat(document.getElementById('alertPrice').value);
+    
+    appState.alerts.push({ symbol: sym, condition: cond, targetPrice: price, triggered: false });
+    saveToStorage();
+    renderAlerts();
+    document.getElementById('alertForm').reset();
+}
+
+function renderAlerts() {
+    const list = document.getElementById('activeAlertsList');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    appState.alerts.forEach((alert, index) => {
+        list.innerHTML += `
+            <li>
+                <span>${alert.symbol} Condition: if value moves <strong>${alert.condition}</strong> $${alert.targetPrice}</span>
+                <span class="badge ${alert.triggered ? 'positive' : ''}">${alert.triggered ? 'TRIGGERED TRANSMISSION' : 'Monitoring'}</span>
+            </li>
+        `;
+    });
+}
+
+function checkAlertTriggerConditions() {
+    appState.alerts.forEach(alert => {
+        if(!alert.triggered) {
+            let currentVal = appState.marketData[alert.symbol].price;
+            if(alert.condition === "above" && currentVal >= alert.targetPrice) {
+                alert.triggered = true;
+                triggerPushNotificationTransmission(alert);
+            } else if (alert.condition === "below" && currentVal <= alert.targetPrice) {
+                alert.triggered = true;
+                triggerPushNotificationTransmission(alert);
+            }
+        }
+    });
+}
+
+function triggerPushNotificationTransmission(alert) {
+    // Encrypted Alert API transmission notification layer emulation
+    console.log(`Transmitting Encrypted Alert Target Vector Payload: ${alert.symbol} hit specified parameters.`);
+    alert('YourStocks Alert Transmission Triggered: ' + alert.symbol + ' has reached your set parameter boundary of $' + alert.targetPrice);
+    renderAlerts();
+    saveToStorage();
+}
+
+// --- Functional: Simulated Trading Space Mechanics ---
+function updateTradePrice() {
+    const selectedSym = document.getElementById('tradeSymbol').value;
+    const underlyingPrice = appState.marketData[selectedSym].price;
+    document.getElementById('tradePriceDisplay').innerText = `$${underlyingPrice.toFixed(2)}`;
+}
+
+function executeTrade(event) {
+    event.preventDefault();
+    const sym = document.getElementById('tradeSymbol').value;
+    const type = document.getElementById('tradeType').value;
+    const qty = parseInt(document.getElementById('tradeQuantity').value);
+    const execPrice = appState.marketData[sym].price;
+    const costTotal = execPrice * qty;
+    
+    if(type === "BUY") {
+        if(costTotal > appState.simCash) {
+            alert("Insufficient simulated structural currency assets available inside profile parameters.");
+            return;
+        }
+        appState.simCash -= costTotal;
+        
+        let position = appState.portfolio.find(p => p.symbol === sym);
+        if(position) {
+            position.avgBuy = ((position.avgBuy * position.shares) + costTotal) / (position.shares + qty);
+            position.shares += qty;
+        } else {
+            appState.portfolio.push({ symbol: sym, shares: qty, avgBuy: execPrice });
+        }
+    } else { // SELL Engine Logic Execution
+        let position = appState.portfolio.find(p => p.symbol === sym);
+        if(!position || position.shares < qty) {
+            alert("Execution Error: You hold insufficient physical shares of asset to process operations.");
+            return;
+        }
+        appState.simCash += costTotal;
+        position.shares -= qty;
+        if(position.shares === 0) {
+            appState.portfolio = appState.portfolio.filter(p => p.symbol !== sym);
+        }
+    }
+    
+    // Save history logs directly to state storage
+    appState.simHistory.unshift(`${type} Order Transmitted Successfully: ${qty} units of ${sym} processed at rate of $${execPrice.toFixed(2)}`);
+    saveToStorage();
+    renderSimulation();
+    renderDashboard();
+}
+
+function renderSimulation() {
+    document.getElementById('simCash').innerText = `$${appState.simCash.toFixed(2)}`;
+    const logContainer = document.getElementById('simHistoryLog');
+    logContainer.innerHTML = '';
+    appState.simHistory.forEach(log => {
+        logContainer.innerHTML += `<li>${log}</li>`;
+    });
+}
+
+// --- Storage Engine Layer Rules ---
+function saveToStorage() {
+    localStorage.setItem('YOURSTOCKS_state', JSON.stringify(appState));
+}
+
+function loadFromStorage() {
+    let localData = localStorage.getItem('YOURSTOCKS_state');
+    if(localData) {
+        appState = JSON.parse(localData);
+    }
+}
