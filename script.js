@@ -1,257 +1,248 @@
-// --- Application Storage Default State Architecture ---
-let appState = {
-    user: null,
-    marketData: {
-        AAPL: { name: "Apple", price: 175.50, change: 1.2 },
-        MSFT: { name: "Microsoft", price: 415.20, change: -0.4 },
-        GOOGL: { name: "Alphabet", price: 152.10, change: 0.8 },
-        AMZN: { name: "Amazon", price: 178.40, change: 1.5 }
-    },
-    portfolio: [
-        { symbol: "AAPL", shares: 40, avgBuy: 170.00 },
-        { symbol: "MSFT", shares: 10, avgBuy: 410.00 }
-    ],
-    alerts: [],
-    riskAssessment: null,
-    simCash: 10000.00,
-    simHistory: []
-};
+/* script.js
+   Minimal interactive logic for the TradingView-inspired layout
+   No external libraries required
+*/
 
-// --- Initialization Layer ---
-document.addEventListener("DOMContentLoaded", () => {
-    loadFromStorage();
-    initMarketSimulation();
-    renderDashboard();
-    renderAlerts();
-    renderSimulation();
-    updateTradePrice();
-});
+(() => {
+  // Sample watchlist data
+  const symbols = [
+    { symbol: 'BTCUSD', price: 64250.12, change: 0.012 },
+    { symbol: 'ETHUSD', price: 4200.45, change: -0.008 },
+    { symbol: 'AAPL', price: 174.22, change: 0.006 },
+    { symbol: 'TSLA', price: 214.88, change: -0.023 },
+    { symbol: 'EURUSD', price: 1.0823, change: 0.0004 }
+  ];
 
-// --- Functional: Navigation Tab Switching Logic ---
-function switchTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active-tab'));
-    document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
-    
-    document.getElementById(`${tabId}-tab`).classList.add('active-tab');
-    event.target.classList.add('active');
-}
+  // State
+  let active = null;
+  const positions = [];
 
-// --- Transmission & Input: Secure Authentication Layer Simulation ---
-function openAuthModal() {
-    document.getElementById('authModal').style.display = 'flex';
-}
+  // DOM refs
+  const watchlistEl = document.getElementById('watchlist');
+  const activeSymbolEl = document.getElementById('activeSymbol');
+  const activeMetaEl = document.getElementById('activeMeta');
+  const orderSymbolEl = document.getElementById('orderSymbol');
+  const orderPriceEl = document.getElementById('orderPrice');
+  const chartCanvas = document.getElementById('chartCanvas');
+  const ctx = chartCanvas.getContext('2d');
+  const positionsTableBody = document.querySelector('#positionsTable tbody');
+  const toast = document.getElementById('toast');
 
-function closeAuthModal() {
-    document.getElementById('authModal').style.display = 'none';
-}
-
-function handleAuth(event) {
-    event.preventDefault();
-    const userIn = document.getElementById('username').value;
-    
-    // Simulating Secure API Request Channel transmission to authenticate user credentials
-    console.log("Transmitting encrypted user authentication structural token packet...");
-    
-    appState.user = userIn;
-    saveToStorage();
-    
-    document.getElementById('authStatus').innerHTML = `<span>Welcome, <strong>${userIn}</strong></span>`;
-    closeAuthModal();
-}
-
-// --- Transmission & Transmission Processing: Live Simulated Feed API System ---
-function initMarketSimulation() {
-    // Generates simulated live price updates continuously as the application runs
-    setInterval(() => {
-        for (let key in appState.marketData) {
-            let variance = (Math.random() - 0.5) * 2; 
-            appState.marketData[key].price = parseFloat((appState.marketData[key].price + variance).toFixed(2));
-        }
-        // Simulated structural output updates
-        renderDashboard();
-        updateTradePrice();
-        checkAlertTriggerConditions();
-    }, 4000); 
-}
-
-// --- Functional/Output: Dashboard View Syncing ---
-function renderDashboard() {
-    const feedEl = document.getElementById('marketFeed');
-    if(feedEl) {
-        feedEl.innerHTML = '';
-        for (let key in appState.marketData) {
-            let stock = appState.marketData[key];
-            feedEl.innerHTML += `<li><span><strong>${key}</strong>: $${stock.price}</span> <span class="badge ${stock.change >= 0 ? 'positive' : ''}">${stock.change}%</span></li>`;
-        }
-    }
-
-    const tableBody = document.querySelector('#portfolioTable tbody');
-    if(tableBody) {
-        tableBody.innerHTML = '';
-        let totalVal = 0;
-        
-        appState.portfolio.forEach(item => {
-            const currentPrice = appState.marketData[item.symbol].price;
-            const totalItemValue = item.shares * currentPrice;
-            const profitLoss = (currentPrice - item.avgBuy) * item.shares;
-            totalVal += totalItemValue;
-            
-            tableBody.innerHTML += `
-                <tr>
-                    <td><strong>${item.symbol}</strong></td>
-                    <td>${item.shares}</td>
-                    <td>$${item.avgBuy.toFixed(2)}</td>
-                    <td>$${currentPrice.toFixed(2)}</td>
-                    <td>$${totalItemValue.toFixed(2)}</td>
-                    <td style="color: ${profitLoss >= 0 ? 'var(--primary-green)' : 'red'}">$${profitLoss.toFixed(2)}</td>
-                </tr>
-            `;
-        });
-        
-        document.getElementById('totalValue').innerText = `$${totalVal.toFixed(2)}`;
-    }
-}
-
-// --- Functional/Input: Risk Profile Calculation Rules ---
-function calculateRisk(event) {
-    event.preventDefault();
-    const q1 = parseInt(document.querySelector('input[name="q1"]:checked').value);
-    const q2 = parseInt(document.querySelector('input[name="q2"]:checked').value);
-    
-    const operationalScore = q1 + q2;
-    let computedProfile = "Conservative Profile";
-    
-    if (operationalScore > 4 && operationalScore <= 7) {
-        computedProfile = "Balanced Strategy Profile";
-    } else if (operationalScore > 7) {
-        computedProfile = "Aggressive Growth Profile";
-    }
-    
-    appState.riskAssessment = computedProfile;
-    saveToStorage();
-    
-    const resultBox = document.getElementById('riskResult');
-    resultBox.innerHTML = `<strong>Calculated Structural Outcome:</strong> Clear Risk Characterisation assigned as <strong>${computedProfile}</strong>. Disjointed evaluation error variables successfully removed.`;
-    resultBox.classList.remove('hidden');
-}
-
-// --- Functional/Input: Price Alerts Mechanism ---
-function createAlert(event) {
-    event.preventDefault();
-    const sym = document.getElementById('alertSymbol').value;
-    const cond = document.getElementById('alertCondition').value;
-    const price = parseFloat(document.getElementById('alertPrice').value);
-    
-    appState.alerts.push({ symbol: sym, condition: cond, targetPrice: price, triggered: false });
-    saveToStorage();
-    renderAlerts();
-    document.getElementById('alertForm').reset();
-}
-
-function renderAlerts() {
-    const list = document.getElementById('activeAlertsList');
-    if(!list) return;
-    list.innerHTML = '';
-    
-    appState.alerts.forEach((alert, index) => {
-        list.innerHTML += `
-            <li>
-                <span>${alert.symbol} Condition: if value moves <strong>${alert.condition}</strong> $${alert.targetPrice}</span>
-                <span class="badge ${alert.triggered ? 'positive' : ''}">${alert.triggered ? 'TRIGGERED TRANSMISSION' : 'Monitoring'}</span>
-            </li>
-        `;
+  // Render watchlist
+  function renderWatchlist() {
+    watchlistEl.innerHTML = '';
+    symbols.forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'item' + (s.change < 0 ? ' negative' : '');
+      item.setAttribute('role','listitem');
+      item.innerHTML = `
+        <div>
+          <div class="symbol">${s.symbol}</div>
+          <div class="meta" style="font-size:12px">${formatPrice(s.price)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="change">${formatChange(s.change)}</div>
+          <div class="meta" style="font-size:12px">${(s.change*100).toFixed(2)}%</div>
+        </div>
+      `;
+      item.addEventListener('click', () => setActiveSymbol(s.symbol));
+      watchlistEl.appendChild(item);
     });
-}
+  }
 
-function checkAlertTriggerConditions() {
-    appState.alerts.forEach(alert => {
-        if(!alert.triggered) {
-            let currentVal = appState.marketData[alert.symbol].price;
-            if(alert.condition === "above" && currentVal >= alert.targetPrice) {
-                alert.triggered = true;
-                triggerPushNotificationTransmission(alert);
-            } else if (alert.condition === "below" && currentVal <= alert.targetPrice) {
-                alert.triggered = true;
-                triggerPushNotificationTransmission(alert);
-            }
-        }
+  // Helpers
+  function formatPrice(p) {
+    if (p >= 1000) return p.toLocaleString(undefined, {maximumFractionDigits:2});
+    if (p >= 1) return p.toFixed(4);
+    return p.toPrecision(6);
+  }
+  function formatChange(c) {
+    return (c >= 0 ? '+' : '') + (c * 100).toFixed(2) + '%';
+  }
+
+  // Set active symbol
+  function setActiveSymbol(sym) {
+    active = symbols.find(s => s.symbol === sym);
+    if (!active) return;
+    activeSymbolEl.textContent = active.symbol;
+    activeMetaEl.textContent = `Price ${formatPrice(active.price)} • Change ${(active.change*100).toFixed(2)}%`;
+    orderSymbolEl.textContent = active.symbol;
+    orderPriceEl.textContent = formatPrice(active.price);
+    drawChart(generateSeries(active.price));
+  }
+
+  // Mock live updates
+  function randomWalk(p) {
+    const vol = Math.max(0.0005, Math.abs(p) * 0.0005);
+    return p * (1 + (Math.random() - 0.5) * vol);
+  }
+  function updatePrices() {
+    symbols.forEach(s => {
+      const old = s.price;
+      s.price = randomWalk(s.price);
+      s.change = (s.price - old) / old;
     });
-}
-
-function triggerPushNotificationTransmission(alert) {
-    // Encrypted Alert API transmission notification layer emulation
-    console.log(`Transmitting Encrypted Alert Target Vector Payload: ${alert.symbol} hit specified parameters.`);
-    alert('YourStocks Alert Transmission Triggered: ' + alert.symbol + ' has reached your set parameter boundary of $' + alert.targetPrice);
-    renderAlerts();
-    saveToStorage();
-}
-
-// --- Functional: Simulated Trading Space Mechanics ---
-function updateTradePrice() {
-    const selectedSym = document.getElementById('tradeSymbol').value;
-    const underlyingPrice = appState.marketData[selectedSym].price;
-    document.getElementById('tradePriceDisplay').innerText = `$${underlyingPrice.toFixed(2)}`;
-}
-
-function executeTrade(event) {
-    event.preventDefault();
-    const sym = document.getElementById('tradeSymbol').value;
-    const type = document.getElementById('tradeType').value;
-    const qty = parseInt(document.getElementById('tradeQuantity').value);
-    const execPrice = appState.marketData[sym].price;
-    const costTotal = execPrice * qty;
-    
-    if(type === "BUY") {
-        if(costTotal > appState.simCash) {
-            alert("Insufficient simulated structural currency assets available inside profile parameters.");
-            return;
-        }
-        appState.simCash -= costTotal;
-        
-        let position = appState.portfolio.find(p => p.symbol === sym);
-        if(position) {
-            position.avgBuy = ((position.avgBuy * position.shares) + costTotal) / (position.shares + qty);
-            position.shares += qty;
-        } else {
-            appState.portfolio.push({ symbol: sym, shares: qty, avgBuy: execPrice });
-        }
-    } else { // SELL Engine Logic Execution
-        let position = appState.portfolio.find(p => p.symbol === sym);
-        if(!position || position.shares < qty) {
-            alert("Execution Error: You hold insufficient physical shares of asset to process operations.");
-            return;
-        }
-        appState.simCash += costTotal;
-        position.shares -= qty;
-        if(position.shares === 0) {
-            appState.portfolio = appState.portfolio.filter(p => p.symbol !== sym);
-        }
+    renderWatchlist();
+    if (active) {
+      orderPriceEl.textContent = formatPrice(active.price);
+      activeMetaEl.textContent = `Price ${formatPrice(active.price)} • Change ${(active.change*100).toFixed(2)}%`;
+      drawChart(generateSeries(active.price));
     }
-    
-    // Save history logs directly to state storage
-    appState.simHistory.unshift(`${type} Order Transmitted Successfully: ${qty} units of ${sym} processed at rate of $${execPrice.toFixed(2)}`);
-    saveToStorage();
-    renderSimulation();
-    renderDashboard();
-}
+  }
 
-function renderSimulation() {
-    document.getElementById('simCash').innerText = `$${appState.simCash.toFixed(2)}`;
-    const logContainer = document.getElementById('simHistoryLog');
-    logContainer.innerHTML = '';
-    appState.simHistory.forEach(log => {
-        logContainer.innerHTML += `<li>${log}</li>`;
+  // Simple sparkline chart drawing
+  function generateSeries(latest) {
+    // create a small series around latest
+    const points = 80;
+    const arr = new Array(points).fill(0).map((_,i) => {
+      const jitter = (Math.sin(i/6) + Math.random()*0.6 - 0.3) * (latest * 0.002);
+      return latest + jitter - (points - i) * (latest * 0.00002);
     });
-}
+    arr[arr.length - 1] = latest;
+    return arr;
+  }
 
-// --- Storage Engine Layer Rules ---
-function saveToStorage() {
-    localStorage.setItem('YOURSTOCKS_state', JSON.stringify(appState));
-}
+  function drawChart(series) {
+    const w = chartCanvas.width = chartCanvas.clientWidth || 1200;
+    const h = chartCanvas.height = chartCanvas.clientHeight || 600;
+    ctx.clearRect(0,0,w,h);
 
-function loadFromStorage() {
-    let localData = localStorage.getItem('YOURSTOCKS_state');
-    if(localData) {
-        appState = JSON.parse(localData);
+    // background grid
+    ctx.fillStyle = '#07101a';
+    ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let i=1;i<4;i++){
+      ctx.beginPath();
+      ctx.moveTo(0, h * i / 4);
+      ctx.lineTo(w, h * i / 4);
+      ctx.stroke();
     }
-}
+
+    // series path
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const range = max - min || 1;
+    ctx.beginPath();
+    series.forEach((v,i) => {
+      const x = (i / (series.length - 1)) * w;
+      const y = h - ((v - min) / range) * h;
+      if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = 'rgba(59,130,246,0.95)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // fill under curve
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0, 'rgba(59,130,246,0.12)');
+    grad.addColorStop(1, 'rgba(59,130,246,0.02)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // latest price label
+    const last = series[series.length - 1];
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(w - 110, 12, 100, 28);
+    ctx.fillStyle = '#e6eef8';
+    ctx.font = '600 14px ' + getComputedStyle(document.documentElement).getPropertyValue('--font-sans');
+    ctx.fillText(formatPrice(last), w - 100, 32);
+  }
+
+  // Orders
+  function placeOrder(side) {
+    if (!active) return showToast('Select a symbol first', true);
+    const qty = parseFloat(document.getElementById('qty').value) || 0;
+    if (qty <= 0) return showToast('Enter a valid quantity', true);
+    const price = active.price;
+    // mock fill
+    const pos = positions.find(p => p.symbol === active.symbol);
+    if (pos) {
+      // update avg
+      const total = pos.qty * pos.avg + qty * price;
+      pos.qty += qty;
+      pos.avg = total / pos.qty;
+    } else {
+      positions.push({ symbol: active.symbol, qty, avg: price });
+    }
+    renderPositions();
+    showToast(`${side} ${qty} ${active.symbol} @ ${formatPrice(price)}`);
+  }
+
+  function renderPositions() {
+    positionsTableBody.innerHTML = '';
+    positions.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${p.symbol}</td><td>${p.qty}</td><td>${formatPrice(p.avg)}</td>`;
+      positionsTableBody.appendChild(tr);
+    });
+  }
+
+  // Toast helper
+  let toastTimer = null;
+  function showToast(msg, isError = false) {
+    toast.style.display = 'block';
+    toast.style.background = isError ? 'linear-gradient(90deg,#3b0b0b,#5a0b0b)' : 'rgba(0,0,0,0.6)';
+    toast.textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.style.display = 'none', 3000);
+  }
+
+  // UI toggles
+  document.getElementById('toggleSidebar').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('hidden');
+  });
+  document.getElementById('toggleRight').addEventListener('click', () => {
+    document.querySelector('.right-panel').classList.toggle('hidden');
+  });
+
+  // Search quick add
+  document.getElementById('addSymbolBtn').addEventListener('click', () => {
+    const s = prompt('Add symbol e.g. SOLUSD');
+    if (!s) return;
+    symbols.unshift({ symbol: s.toUpperCase(), price: Math.round(Math.random()*1000)/10 + 10, change: 0 });
+    renderWatchlist();
+    showToast(`${s.toUpperCase()} added`);
+  });
+
+  // Symbol search quick select
+  document.getElementById('symbolSearch').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = e.target.value.trim().toUpperCase();
+      if (!q) return;
+      const found = symbols.find(s => s.symbol === q);
+      if (found) setActiveSymbol(found.symbol);
+      else {
+        symbols.unshift({ symbol: q, price: Math.round(Math.random()*1000)/10 + 10, change: 0 });
+        renderWatchlist();
+        setActiveSymbol(q);
+      }
+      e.target.value = '';
+    }
+  });
+
+  // Order buttons
+  document.getElementById('buyBtn').addEventListener('click', () => placeOrder('Buy'));
+  document.getElementById('sellBtn').addEventListener('click', () => placeOrder('Sell'));
+  document.getElementById('placeOrder').addEventListener('click', () => {
+    const type = document.getElementById('orderType').value;
+    placeOrder(type === 'Market' ? 'Buy' : 'Buy');
+  });
+
+  // Responsive redraw on resize
+  window.addEventListener('resize', () => {
+    if (active) drawChart(generateSeries(active.price));
+  });
+
+  // Init
+  renderWatchlist();
+  // set first symbol active
+  setActiveSymbol(symbols[0].symbol);
+
+  // Simulate live feed
+  setInterval(updatePrices, 1500);
+
+})();
