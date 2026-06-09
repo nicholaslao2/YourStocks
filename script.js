@@ -1,197 +1,366 @@
 /* script.js
-   Minimal interactive logic for the TradingView-inspired layout
-   No external libraries required
+   YourStocks – advanced trading dashboard
+   - 100+ instruments
+   - Candlestick chart (Lightweight Charts)
+   - Trendlines + horizontal lines (SL/TP)
+   - Paper orders
 */
 
 (() => {
-  // Sample watchlist data
-  const symbols = [
-    { symbol: 'BTCUSD', price: 64250.12, change: 0.012 },
-    { symbol: 'ETHUSD', price: 4200.45, change: -0.008 },
-    { symbol: 'AAPL', price: 174.22, change: 0.006 },
-    { symbol: 'TSLA', price: 214.88, change: -0.023 },
-    { symbol: 'EURUSD', price: 1.0823, change: 0.0004 }
+  // ---------- CONFIG: DATA PROVIDER ----------
+
+  // Choose a provider and wire it up.
+  // Examples (you must sign up and get an API key):
+  // - TradingView Data API via RapidAPI 
+  // - Alpha Vantage (free tier, delayed) 
+  // - Polygon / Finnhub / Twelve Data, etc. 
+
+  const DATA_PROVIDER = {
+    type: 'mock', // 'mock' or 'api'
+    apiKey: 'YOUR_API_KEY_HERE', // put your key here when using 'api'
+    // Example endpoint (pseudo):
+    // url: 'https://example.com/ohlcv?symbol={symbol}&interval={interval}'
+  };
+
+  // ---------- SYMBOL UNIVERSE (100+ instruments) ----------
+
+  const SYMBOLS = [
+    // US large caps
+    'AAPL','MSFT','GOOGL','AMZN','META','TSLA','NVDA','BRK.B','JPM','V','JNJ',
+    'WMT','PG','MA','HD','XOM','PFE','KO','DIS','NFLX','ADBE','CRM','CSCO',
+    'INTC','PEP','T','BAC','C','NKE','MCD','VZ','ABNB','UBER','SHOP','SQ',
+    // Indices
+    'SPY','QQQ','DIA','IWM','NDX','DJI',
+    // FX majors
+    'EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD',
+    // Crypto majors
+    'BTCUSD','ETHUSD','SOLUSD','XRPUSD','LTCUSD','DOGEUSD','ADAUSD',
+    // Commodities / ETFs
+    'GLD','SLV','USO','UNG','GDX','XLK','XLF','XLE','XLV','XLY','XLP',
+    // More US stocks
+    'ORCL','IBM','AMD','QCOM','TXN','BA','CAT','GE','HON','LMT','TMO',
+    'MRK','ABBV','CVX','COP','LOW','COST','BKNG','AXP','GS','BLK','SPGI',
+    'INTU','PYPL','ZM','ROKU','SNOW','PLTR','RBLX','COIN','HOOD','SOFI',
+    // Random extras
+    'BABA','TCEHY','NIO','LI','XPEV','RIO','BHP','CSL.AX','CBA.AX','NAB.AX'
   ];
 
-  // State
-  let active = null;
+  // ---------- STATE ----------
+
+  let activeSymbol = null;
+  let activeInterval = '60'; // default 1h
+  let chart, candleSeries;
+  let drawings = []; // { type: 'trendline'|'hline', line }
+  let drawingMode = 'select'; // 'select' | 'trendline' | 'hline'
+  let tempTrend = null;
   const positions = [];
 
-  // DOM refs
+  // ---------- DOM ----------
+
   const watchlistEl = document.getElementById('watchlist');
   const activeSymbolEl = document.getElementById('activeSymbol');
   const activeMetaEl = document.getElementById('activeMeta');
   const orderSymbolEl = document.getElementById('orderSymbol');
   const orderPriceEl = document.getElementById('orderPrice');
-  const chartCanvas = document.getElementById('chartCanvas');
-  const ctx = chartCanvas.getContext('2d');
-  const positionsTableBody = document.querySelector('#positionsTable tbody');
+  const statusLeftEl = document.getElementById('statusLeft');
+  const dataSourceSelect = document.getElementById('dataSource');
+  const timeframeSelect = document.getElementById('timeframe');
   const toast = document.getElementById('toast');
+  const positionsTableBody = document.querySelector('#positionsTable tbody');
 
-  // Render watchlist
+  const qtyInput = document.getElementById('qty');
+  const stopLossInput = document.getElementById('stopLossInput');
+  const takeProfitInput = document.getElementById('takeProfitInput');
+
+  // ---------- UTIL ----------
+
+  function showToast(msg, isError = false) {
+    toast.style.display = 'block';
+    toast.style.background = isError ? 'linear-gradient(90deg,#3b0b0b,#5a0b0b)' : 'rgba(0,0,0,0.6)';
+    toast.textContent = msg;
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => toast.style.display = 'none', 3000);
+  }
+
+  function formatPrice(p) {
+    if (p >= 1000) return p.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (p >= 1) return p.toFixed(4);
+    return p.toPrecision(6);
+  }
+
+  function nowSec() {
+    return Math.floor(Date.now() / 1000);
+  }
+
+  // ---------- WATCHLIST ----------
+
   function renderWatchlist() {
     watchlistEl.innerHTML = '';
-    symbols.forEach(s => {
+    SYMBOLS.forEach(sym => {
       const item = document.createElement('div');
-      item.className = 'item' + (s.change < 0 ? ' negative' : '');
+      item.className = 'item';
       item.setAttribute('role','listitem');
       item.innerHTML = `
         <div>
-          <div class="symbol">${s.symbol}</div>
-          <div class="meta" style="font-size:12px">${formatPrice(s.price)}</div>
+          <div class="symbol">${sym}</div>
+          <div class="meta" style="font-size:12px">Tap to load candles</div>
         </div>
-        <div style="text-align:right">
-          <div class="change">${formatChange(s.change)}</div>
-          <div class="meta" style="font-size:12px">${(s.change*100).toFixed(2)}%</div>
-        </div>
+        <div class="meta" style="font-size:12px;text-align:right">—</div>
       `;
-      item.addEventListener('click', () => setActiveSymbol(s.symbol));
+      item.addEventListener('click', () => setActiveSymbol(sym));
       watchlistEl.appendChild(item);
     });
   }
 
-  // Helpers
-  function formatPrice(p) {
-    if (p >= 1000) return p.toLocaleString(undefined, {maximumFractionDigits:2});
-    if (p >= 1) return p.toFixed(4);
-    return p.toPrecision(6);
-  }
-  function formatChange(c) {
-    return (c >= 0 ? '+' : '') + (c * 100).toFixed(2) + '%';
-  }
+  // ---------- CHART INIT ----------
 
-  // Set active symbol
-  function setActiveSymbol(sym) {
-    active = symbols.find(s => s.symbol === sym);
-    if (!active) return;
-    activeSymbolEl.textContent = active.symbol;
-    activeMetaEl.textContent = `Price ${formatPrice(active.price)} • Change ${(active.change*100).toFixed(2)}%`;
-    orderSymbolEl.textContent = active.symbol;
-    orderPriceEl.textContent = formatPrice(active.price);
-    drawChart(generateSeries(active.price));
-  }
-
-  // Mock live updates
-  function randomWalk(p) {
-    const vol = Math.max(0.0005, Math.abs(p) * 0.0005);
-    return p * (1 + (Math.random() - 0.5) * vol);
-  }
-  function updatePrices() {
-    symbols.forEach(s => {
-      const old = s.price;
-      s.price = randomWalk(s.price);
-      s.change = (s.price - old) / old;
+  function initChart() {
+    const container = document.getElementById('tvChart');
+    chart = LightweightCharts.createChart(container, {
+      layout: {
+        background: { type: 'Solid', color: '#07101a' },
+        textColor: '#e6eef8',
+      },
+      grid: {
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
+      },
+      rightPriceScale: {
+        borderColor: 'rgba(255,255,255,0.12)',
+      },
+      timeScale: {
+        borderColor: 'rgba(255,255,255,0.12)',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+      },
     });
-    renderWatchlist();
-    if (active) {
-      orderPriceEl.textContent = formatPrice(active.price);
-      activeMetaEl.textContent = `Price ${formatPrice(active.price)} • Change ${(active.change*100).toFixed(2)}%`;
-      drawChart(generateSeries(active.price));
+
+    candleSeries = chart.addCandlestickSeries({
+      upColor: '#00b894',
+      downColor: '#ff6b6b',
+      borderUpColor: '#00b894',
+      borderDownColor: '#ff6b6b',
+      wickUpColor: '#00b894',
+      wickDownColor: '#ff6b6b',
+    });
+
+    // Resize on window resize
+    window.addEventListener('resize', () => {
+      const rect = container.getBoundingClientRect();
+      chart.applyOptions({ width: rect.width, height: rect.height });
+    });
+    const rect = container.getBoundingClientRect();
+    chart.applyOptions({ width: rect.width, height: rect.height });
+
+    // Mouse events for drawing
+    const dom = chart._internal__chartWidget._internal_chartPaneView._private__canvasBinding.canvas; // internal, but works
+    dom.addEventListener('mousedown', onMouseDown);
+    dom.addEventListener('mousemove', onMouseMove);
+    dom.addEventListener('mouseup', onMouseUp);
+  }
+
+  // ---------- DATA FETCHING ----------
+
+  async function fetchCandles(symbol, interval) {
+    const source = dataSourceSelect.value;
+    if (source === 'mock') {
+      return generateMockCandles();
+    }
+
+    // REAL API MODE (you must implement this for your provider)
+    if (!DATA_PROVIDER.apiKey || DATA_PROVIDER.apiKey === 'YOUR_API_KEY_HERE') {
+      showToast('Set your API key in script.js to use real data', true);
+      return generateMockCandles();
+    }
+
+    try {
+      // Example pseudo-call – replace with your provider’s URL & params
+      // const url = DATA_PROVIDER.url
+      //   .replace('{symbol}', symbol)
+      //   .replace('{interval}', interval);
+      // const res = await fetch(url, { headers: { 'X-API-Key': DATA_PROVIDER.apiKey } });
+      // const json = await res.json();
+      // return mapYourProviderToCandles(json);
+
+      // For now, still mock to keep it runnable:
+      return generateMockCandles();
+    } catch (e) {
+      console.error(e);
+      showToast('Error fetching data, using mock instead', true);
+      return generateMockCandles();
     }
   }
 
-  // Simple sparkline chart drawing
-  function generateSeries(latest) {
-    // create a small series around latest
-    const points = 80;
-    const arr = new Array(points).fill(0).map((_,i) => {
-      const jitter = (Math.sin(i/6) + Math.random()*0.6 - 0.3) * (latest * 0.002);
-      return latest + jitter - (points - i) * (latest * 0.00002);
-    });
-    arr[arr.length - 1] = latest;
-    return arr;
-  }
-
-  function drawChart(series) {
-    const w = chartCanvas.width = chartCanvas.clientWidth || 1200;
-    const h = chartCanvas.height = chartCanvas.clientHeight || 600;
-    ctx.clearRect(0,0,w,h);
-
-    // background grid
-    ctx.fillStyle = '#07101a';
-    ctx.fillRect(0,0,w,h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 1;
-    for (let i=1;i<4;i++){
-      ctx.beginPath();
-      ctx.moveTo(0, h * i / 4);
-      ctx.lineTo(w, h * i / 4);
-      ctx.stroke();
+  function generateMockCandles() {
+    const candles = [];
+    const now = nowSec();
+    const bars = 200;
+    let price = 100 + Math.random() * 50;
+    for (let i = bars; i >= 0; i--) {
+      const t = now - i * 60 * 60; // hourly bars
+      const o = price;
+      const change = (Math.random() - 0.5) * 2;
+      const c = o + change;
+      const h = Math.max(o, c) + Math.random() * 1.5;
+      const l = Math.min(o, c) - Math.random() * 1.5;
+      candles.push({ time: t, open: o, high: h, low: l, close: c });
+      price = c;
     }
-
-    // series path
-    const min = Math.min(...series);
-    const max = Math.max(...series);
-    const range = max - min || 1;
-    ctx.beginPath();
-    series.forEach((v,i) => {
-      const x = (i / (series.length - 1)) * w;
-      const y = h - ((v - min) / range) * h;
-      if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.strokeStyle = 'rgba(59,130,246,0.95)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // fill under curve
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    const grad = ctx.createLinearGradient(0,0,0,h);
-    grad.addColorStop(0, 'rgba(59,130,246,0.12)');
-    grad.addColorStop(1, 'rgba(59,130,246,0.02)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // latest price label
-    const last = series[series.length - 1];
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(w - 110, 12, 100, 28);
-    ctx.fillStyle = '#e6eef8';
-    ctx.font = '600 14px ' + getComputedStyle(document.documentElement).getPropertyValue('--font-sans');
-    ctx.fillText(formatPrice(last), w - 100, 32);
+    return candles;
   }
 
-  // Orders
-  function placeOrder(side) {
-    if (!active) return showToast('Select a symbol first', true);
-    const qty = parseFloat(document.getElementById('qty').value) || 0;
-    if (qty <= 0) return showToast('Enter a valid quantity', true);
-    const price = active.price;
-    // mock fill
-    const pos = positions.find(p => p.symbol === active.symbol);
-    if (pos) {
-      // update avg
-      const total = pos.qty * pos.avg + qty * price;
-      pos.qty += qty;
-      pos.avg = total / pos.qty;
+  // ---------- SET ACTIVE SYMBOL ----------
+
+  async function setActiveSymbol(symbol) {
+    activeSymbol = symbol;
+    activeSymbolEl.textContent = symbol;
+    activeMetaEl.textContent = 'Loading candles...';
+    orderSymbolEl.textContent = symbol;
+
+    const candles = await fetchCandles(symbol, activeInterval);
+    candleSeries.setData(candles);
+
+    const last = candles[candles.length - 1];
+    const lastPrice = last ? last.close : null;
+    if (lastPrice != null) {
+      orderPriceEl.textContent = formatPrice(lastPrice);
+      activeMetaEl.textContent = `Last ${formatPrice(lastPrice)} • ${candles.length} bars`;
     } else {
-      positions.push({ symbol: active.symbol, qty, avg: price });
+      orderPriceEl.textContent = '—';
+      activeMetaEl.textContent = 'No data';
     }
+  }
+
+  // ---------- DRAWING TOOLS ----------
+
+  function setDrawingMode(mode) {
+    drawingMode = mode;
+    showToast(`Tool: ${mode}`);
+  }
+
+  function clearDrawings() {
+    drawings.forEach(d => d.line.remove());
+    drawings = [];
+  }
+
+  function priceFromY(y) {
+    const priceScale = chart.priceScale('right');
+    const coord = priceScale.coordinateToPrice(y);
+    return coord;
+  }
+
+  function timeFromX(x) {
+    const timeScale = chart.timeScale();
+    const coord = timeScale.coordinateToTime(x);
+    return coord;
+  }
+
+  function onMouseDown(e) {
+    if (drawingMode === 'trendline') {
+      const rect = e.target.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const t = timeFromX(x);
+      const p = priceFromY(y);
+      if (!t || !p) return;
+      tempTrend = {
+        start: { time: t, price: p },
+        end: { time: t, price: p },
+      };
+      const line = chart.addLineSeries({
+        color: '#3b82f6',
+        lineWidth: 2,
+      });
+      line.setData([
+        { time: t, value: p },
+        { time: t, value: p },
+      ]);
+      tempTrend.line = line;
+    } else if (drawingMode === 'hline') {
+      const rect = e.target.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const p = priceFromY(y);
+      if (!p) return;
+      const line = chart.addLineSeries({
+        color: '#facc15',
+        lineWidth: 1,
+      });
+      const ts = chart.timeScale().getVisibleRange();
+      const t1 = ts ? ts.from : nowSec() - 60 * 60 * 24;
+      const t2 = ts ? ts.to : nowSec();
+      line.setData([
+        { time: t1, value: p },
+        { time: t2, value: p },
+      ]);
+      drawings.push({ type: 'hline', line, price: p });
+      showToast(`Horizontal line at ${formatPrice(p)}`);
+    }
+  }
+
+  function onMouseMove(e) {
+    if (!tempTrend || drawingMode !== 'trendline') return;
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const t = timeFromX(x);
+    const p = priceFromY(y);
+    if (!t || !p) return;
+    tempTrend.end = { time: t, price: p };
+    tempTrend.line.setData([
+      { time: tempTrend.start.time, value: tempTrend.start.price },
+      { time: tempTrend.end.time, value: tempTrend.end.price },
+    ]);
+  }
+
+  function onMouseUp() {
+    if (tempTrend && drawingMode === 'trendline') {
+      drawings.push({ type: 'trendline', line: tempTrend.line, ...tempTrend });
+      tempTrend = null;
+    }
+  }
+
+  // ---------- ORDERS (PAPER) ----------
+
+  function placeOrder(side) {
+    if (!activeSymbol) {
+      showToast('Select a symbol first', true);
+      return;
+    }
+    const qty = parseFloat(qtyInput.value) || 0;
+    if (qty <= 0) {
+      showToast('Enter a valid quantity', true);
+      return;
+    }
+    const entry = orderPriceEl.textContent === '—' ? null : parseFloat(orderPriceEl.textContent.replace(/,/g,''));
+    const sl = parseFloat(stopLossInput.value) || null;
+    const tp = parseFloat(takeProfitInput.value) || null;
+
+    positions.push({ symbol: activeSymbol, side, qty, entry, sl, tp });
     renderPositions();
-    showToast(`${side} ${qty} ${active.symbol} @ ${formatPrice(price)}`);
+    showToast(`Paper ${side} ${qty} ${activeSymbol} @ ${entry ? formatPrice(entry) : 'MKT'}`);
   }
 
   function renderPositions() {
     positionsTableBody.innerHTML = '';
     positions.forEach(p => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${p.symbol}</td><td>${p.qty}</td><td>${formatPrice(p.avg)}</td>`;
+      tr.innerHTML = `
+        <td>${p.symbol}</td>
+        <td>${p.side}</td>
+        <td>${p.qty}</td>
+        <td>${p.entry ? formatPrice(p.entry) : 'MKT'}</td>
+        <td>${p.sl ? formatPrice(p.sl) : '—'}</td>
+        <td>${p.tp ? formatPrice(p.tp) : '—'}</td>
+      `;
       positionsTableBody.appendChild(tr);
     });
   }
 
-  // Toast helper
-  let toastTimer = null;
-  function showToast(msg, isError = false) {
-    toast.style.display = 'block';
-    toast.style.background = isError ? 'linear-gradient(90deg,#3b0b0b,#5a0b0b)' : 'rgba(0,0,0,0.6)';
-    toast.textContent = msg;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.style.display = 'none', 3000);
-  }
+  // ---------- UI HOOKUP ----------
 
-  // UI toggles
   document.getElementById('toggleSidebar').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('hidden');
   });
@@ -199,50 +368,55 @@
     document.querySelector('.right-panel').classList.toggle('hidden');
   });
 
-  // Search quick add
   document.getElementById('addSymbolBtn').addEventListener('click', () => {
-    const s = prompt('Add symbol e.g. SOLUSD');
+    const s = prompt('Add symbol (e.g. SOLUSD, TSLA)');
     if (!s) return;
-    symbols.unshift({ symbol: s.toUpperCase(), price: Math.round(Math.random()*1000)/10 + 10, change: 0 });
+    const sym = s.toUpperCase();
+    if (!SYMBOLS.includes(sym)) SYMBOLS.unshift(sym);
     renderWatchlist();
-    showToast(`${s.toUpperCase()} added`);
+    showToast(`${sym} added to watchlist`);
   });
 
-  // Symbol search quick select
-  document.getElementById('symbolSearch').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const q = e.target.value.trim().toUpperCase();
-      if (!q) return;
-      const found = symbols.find(s => s.symbol === q);
-      if (found) setActiveSymbol(found.symbol);
-      else {
-        symbols.unshift({ symbol: q, price: Math.round(Math.random()*1000)/10 + 10, change: 0 });
-        renderWatchlist();
-        setActiveSymbol(q);
-      }
-      e.target.value = '';
+  document.getElementById('symbolSearch').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const q = e.target.value.trim().toUpperCase();
+    if (!q) return;
+    if (!SYMBOLS.includes(q)) SYMBOLS.unshift(q);
+    renderWatchlist();
+    setActiveSymbol(q);
+    e.target.value = '';
+  });
+
+  timeframeSelect.addEventListener('change', () => {
+    activeInterval = timeframeSelect.value;
+    if (activeSymbol) setActiveSymbol(activeSymbol);
+  });
+
+  dataSourceSelect.addEventListener('change', () => {
+    const mode = dataSourceSelect.value;
+    if (mode === 'mock') {
+      statusLeftEl.textContent = 'Disconnected • Using mock data';
+    } else {
+      statusLeftEl.textContent = 'API mode • Set your key in script.js';
     }
+    if (activeSymbol) setActiveSymbol(activeSymbol);
   });
 
-  // Order buttons
-  document.getElementById('buyBtn').addEventListener('click', () => placeOrder('Buy'));
-  document.getElementById('sellBtn').addEventListener('click', () => placeOrder('Sell'));
-  document.getElementById('placeOrder').addEventListener('click', () => {
-    const type = document.getElementById('orderType').value;
-    placeOrder(type === 'Market' ? 'Buy' : 'Buy');
+  document.getElementById('toolSelect').addEventListener('click', () => setDrawingMode('select'));
+  document.getElementById('toolTrendline').addEventListener('click', () => setDrawingMode('trendline'));
+  document.getElementById('toolHLine').addEventListener('click', () => setDrawingMode('hline'));
+  document.getElementById('toolClear').addEventListener('click', () => {
+    clearDrawings();
+    showToast('Drawings cleared');
   });
 
-  // Responsive redraw on resize
-  window.addEventListener('resize', () => {
-    if (active) drawChart(generateSeries(active.price));
-  });
+  document.getElementById('buyBtn').addEventListener('click', () => placeOrder('BUY'));
+  document.getElementById('sellBtn').addEventListener('click', () => placeOrder('SELL'));
+  document.getElementById('placeOrder').addEventListener('click', () => placeOrder('BUY'));
 
-  // Init
+  // ---------- INIT ----------
+
   renderWatchlist();
-  // set first symbol active
-  setActiveSymbol(symbols[0].symbol);
-
-  // Simulate live feed
-  setInterval(updatePrices, 1500);
-
+  initChart();
+  setActiveSymbol(SYMBOLS[0]);
 })();
