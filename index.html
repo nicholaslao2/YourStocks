@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Trading Dashboard</title>
+  <title>YourStocks – Advanced Trading Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,25 +15,24 @@
         <span class="logo" aria-hidden="true"></span>
         <div>
           <div style="font-weight:700">YourStocks</div>
-          <div style="font-size:12px;color:var(--muted)">Realtime charts and orders</div>
+          <div style="font-size:12px;color:var(--muted)">Multi‑asset charts • Real data • Drawing tools</div>
         </div>
       </div>
 
       <div class="search" role="search">
-        <input id="symbolSearch" placeholder="Search symbol e.g. BTCUSD, AAPL" aria-label="Search symbol" />
+        <input id="symbolSearch" placeholder="Search or add symbol (e.g. AAPL, TSLA, BTCUSD)" aria-label="Search symbol" />
       </div>
 
       <div class="top-actions">
         <button id="toggleSidebar" class="icon-btn" title="Toggle watchlist">☰</button>
         <button id="toggleRight" class="icon-btn" title="Toggle order panel">≡</button>
-        <button class="icon-btn" title="Profile">👤</button>
       </div>
     </header>
 
     <!-- Left sidebar watchlist -->
     <aside class="sidebar">
       <div class="watchlist-header">
-        <div class="watchlist-title">Watchlist</div>
+        <div class="watchlist-title">Watchlist (100+)</div>
         <div class="watchlist-actions">
           <button id="addSymbolBtn" class="small-btn">+ Add</button>
         </div>
@@ -47,26 +46,39 @@
       <div class="chart-header">
         <div class="left">
           <div class="symbol" id="activeSymbol">—</div>
-          <div class="meta" id="activeMeta">Select a symbol to view chart</div>
+          <div class="meta" id="activeMeta">Select a symbol to load real candlesticks</div>
         </div>
-        <div class="right">
-          <div class="meta">Timeframe
+        <div class="right" style="display:flex;gap:10px;align-items:center">
+          <div class="meta">
+            TF
             <select id="timeframe">
-              <option>1m</option>
-              <option>5m</option>
-              <option selected>1h</option>
-              <option>1D</option>
+              <option value="1">1m</option>
+              <option value="5">5m</option>
+              <option value="15">15m</option>
+              <option value="60" selected>1h</option>
+              <option value="D">1D</option>
+            </select>
+          </div>
+          <div class="meta">
+            Data
+            <select id="dataSource">
+              <option value="mock" selected>Mock (offline)</option>
+              <option value="api">API (real)</option>
             </select>
           </div>
         </div>
       </div>
 
       <div class="chart-canvas" id="chartContainer">
-        <canvas id="chartCanvas" width="1200" height="600"></canvas>
+        <!-- Lightweight Charts will mount here -->
+        <div id="tvChart" style="width:100%;height:100%;"></div>
+
+        <!-- Floating drawing toolbar -->
         <div class="floating-toolbar" id="chartTools">
-          <button class="icon-btn" title="Crosshair">✚</button>
-          <button class="icon-btn" title="Indicators">ƒ</button>
-          <button class="icon-btn" title="Draw">✎</button>
+          <button class="icon-btn" id="toolSelect" title="Select / Pan">🖱</button>
+          <button class="icon-btn" id="toolTrendline" title="Trendline">📈</button>
+          <button class="icon-btn" id="toolHLine" title="Horizontal line (SL/TP)">➖</button>
+          <button class="icon-btn" id="toolClear" title="Clear drawings">🧹</button>
         </div>
       </div>
     </main>
@@ -78,6 +90,9 @@
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="font-weight:700" id="orderSymbol">—</div>
             <div class="badge" id="orderPrice">—</div>
+          </div>
+          <div class="meta" style="margin-top:4px;font-size:12px">
+            Stop loss / Take profit are drawn as horizontal lines on the chart.
           </div>
         </div>
 
@@ -95,21 +110,27 @@
         </div>
 
         <div class="section">
-          <label>Order Type</label>
-          <select id="orderType">
-            <option>Market</option>
-            <option>Limit</option>
-          </select>
+          <label>Stop Loss (price)</label>
+          <input id="stopLossInput" type="number" step="0.01" placeholder="Optional" />
         </div>
 
         <div class="section">
-          <button id="placeOrder" class="btn buy" style="width:100%">Place Order</button>
+          <label>Take Profit (price)</label>
+          <input id="takeProfitInput" type="number" step="0.01" placeholder="Optional" />
         </div>
 
         <div class="section">
-          <div style="font-weight:700;margin-bottom:8px">Positions</div>
+          <button id="placeOrder" class="btn buy" style="width:100%">Place Paper Order</button>
+        </div>
+
+        <div class="section">
+          <div style="font-weight:700;margin-bottom:8px">Open Positions (Paper)</div>
           <table class="table" id="positionsTable">
-            <thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>SL</th><th>TP</th>
+              </tr>
+            </thead>
             <tbody></tbody>
           </table>
         </div>
@@ -118,8 +139,8 @@
 
     <!-- Status bar -->
     <footer class="status-bar">
-      <div id="statusLeft">Connected • Mock feed</div>
-      <div id="statusRight">Latency <span class="badge" id="latency">12ms</span></div>
+      <div id="statusLeft">Disconnected • Using mock data</div>
+      <div id="statusRight">Source: YourStocks • Candles + drawings</div>
     </footer>
 
     <!-- Toast -->
@@ -127,6 +148,10 @@
 
   </div>
 
+  <!-- Lightweight Charts (TradingView) -->
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+
+  <!-- Your app logic -->
   <script src="script.js"></script>
 </body>
 </html>
