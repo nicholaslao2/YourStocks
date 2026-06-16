@@ -9,49 +9,35 @@
 (() => {
   // ---------- CONFIG: DATA PROVIDER ----------
 
-  // Choose a provider and wire it up.
-  // Examples (you must sign up and get an API key):
-  // - TradingView Data API via RapidAPI 
-  // - Alpha Vantage (free tier, delayed) 
-  // - Polygon / Finnhub / Twelve Data, etc. 
-
   const DATA_PROVIDER = {
-    type: 'mock', // 'mock' or 'api'
-    apiKey: 'YOUR_API_KEY_HERE', // put your key here when using 'api'
-    // Example endpoint (pseudo):
-    // url: 'https://example.com/ohlcv?symbol={symbol}&interval={interval}'
+    type: 'api', 
+    apiKey: 'd8ob7t9r01qrbffkkl2gd8ob7t9r01qrbffkkl30',
+    url: 'https://finnhub.io/api/v1/stock/candle?symbol={symbol}&resolution={interval}&count=500&token={apikey}'
   };
 
   // ---------- SYMBOL UNIVERSE (100+ instruments) ----------
 
   const SYMBOLS = [
-    // US large caps
     'AAPL','MSFT','GOOGL','AMZN','META','TSLA','NVDA','BRK.B','JPM','V','JNJ',
     'WMT','PG','MA','HD','XOM','PFE','KO','DIS','NFLX','ADBE','CRM','CSCO',
     'INTC','PEP','T','BAC','C','NKE','MCD','VZ','ABNB','UBER','SHOP','SQ',
-    // Indices
     'SPY','QQQ','DIA','IWM','NDX','DJI',
-    // FX majors
     'EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD',
-    // Crypto majors
     'BTCUSD','ETHUSD','SOLUSD','XRPUSD','LTCUSD','DOGEUSD','ADAUSD',
-    // Commodities / ETFs
     'GLD','SLV','USO','UNG','GDX','XLK','XLF','XLE','XLV','XLY','XLP',
-    // More US stocks
     'ORCL','IBM','AMD','QCOM','TXN','BA','CAT','GE','HON','LMT','TMO',
     'MRK','ABBV','CVX','COP','LOW','COST','BKNG','AXP','GS','BLK','SPGI',
     'INTU','PYPL','ZM','ROKU','SNOW','PLTR','RBLX','COIN','HOOD','SOFI',
-    // Random extras
     'BABA','TCEHY','NIO','LI','XPEV','RIO','BHP','CSL.AX','CBA.AX','NAB.AX'
   ];
 
   // ---------- STATE ----------
 
   let activeSymbol = null;
-  let activeInterval = '60'; // default 1h
+  let activeInterval = '60';
   let chart, candleSeries;
-  let drawings = []; // { type: 'trendline'|'hline', line }
-  let drawingMode = 'select'; // 'select' | 'trendline' | 'hline'
+  let drawings = [];
+  let drawingMode = 'select';
   let tempTrend = null;
   const positions = [];
 
@@ -147,7 +133,6 @@
       wickDownColor: '#ff6b6b',
     });
 
-    // Resize on window resize
     window.addEventListener('resize', () => {
       const rect = container.getBoundingClientRect();
       chart.applyOptions({ width: rect.width, height: rect.height });
@@ -155,43 +140,56 @@
     const rect = container.getBoundingClientRect();
     chart.applyOptions({ width: rect.width, height: rect.height });
 
-    // Mouse events for drawing
-    const dom = chart._internal__chartWidget._internal_chartPaneView._private__canvasBinding.canvas; // internal, but works
+    const dom = chart._internal__chartWidget._internal_chartPaneView._private__canvasBinding.canvas;
     dom.addEventListener('mousedown', onMouseDown);
     dom.addEventListener('mousemove', onMouseMove);
     dom.addEventListener('mouseup', onMouseUp);
   }
 
-  // ---------- DATA FETCHING ----------
+  // ---------- DATA FETCHING (FINNHUB) ----------
 
   async function fetchCandles(symbol, interval) {
     const source = dataSourceSelect.value;
+
     if (source === 'mock') {
       return generateMockCandles();
     }
 
-    // REAL API MODE (you must implement this for your provider)
-    if (!DATA_PROVIDER.apiKey || DATA_PROVIDER.apiKey === 'YOUR_API_KEY_HERE') {
-      showToast('Set your API key in script.js to use real data', true);
-      return generateMockCandles();
-    }
-
     try {
-      // Example pseudo-call – replace with your provider’s URL & params
-      // const url = DATA_PROVIDER.url
-      //   .replace('{symbol}', symbol)
-      //   .replace('{interval}', interval);
-      // const res = await fetch(url, { headers: { 'X-API-Key': DATA_PROVIDER.apiKey } });
-      // const json = await res.json();
-      // return mapYourProviderToCandles(json);
+      const url = DATA_PROVIDER.url
+        .replace('{symbol}', symbol)
+        .replace('{interval}', interval)
+        .replace('{apikey}', DATA_PROVIDER.apiKey);
 
-      // For now, still mock to keep it runnable:
-      return generateMockCandles();
+      const res = await fetch(url);
+      const json = await res.json();
+
+      if (json.s !== 'ok') {
+        showToast('Finnhub returned no data, using mock', true);
+        return generateMockCandles();
+      }
+
+      return mapFinnhubToCandles(json);
+
     } catch (e) {
       console.error(e);
-      showToast('Error fetching data, using mock instead', true);
+      showToast('Error fetching Finnhub data, using mock', true);
       return generateMockCandles();
     }
+  }
+
+  function mapFinnhubToCandles(json) {
+    const candles = [];
+    for (let i = 0; i < json.t.length; i++) {
+      candles.push({
+        time: json.t[i],
+        open: json.o[i],
+        high: json.h[i],
+        low: json.l[i],
+        close: json.c[i]
+      });
+    }
+    return candles;
   }
 
   function generateMockCandles() {
@@ -200,7 +198,7 @@
     const bars = 200;
     let price = 100 + Math.random() * 50;
     for (let i = bars; i >= 0; i--) {
-      const t = now - i * 60 * 60; // hourly bars
+      const t = now - i * 60 * 60;
       const o = price;
       const change = (Math.random() - 0.5) * 2;
       const c = o + change;
@@ -397,7 +395,7 @@
     if (mode === 'mock') {
       statusLeftEl.textContent = 'Disconnected • Using mock data';
     } else {
-      statusLeftEl.textContent = 'API mode • Set your key in script.js';
+      statusLeftEl.textContent = 'API mode • Finnhub active';
     }
     if (activeSymbol) setActiveSymbol(activeSymbol);
   });
