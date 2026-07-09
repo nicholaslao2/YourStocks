@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YourStocks — Trade Smarter</title>
+<meta name="description" content="YourStocks: paper-trade ASX and US stocks, track your portfolio, and understand your risk profile." />
+<link rel="icon" type="image/png" href="assets/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-body">
+
+<div class="auth-wrap">
+
+  <!-- Left: brand / motion panel -->
+  <div class="auth-brand">
+    <div class="auth-brand__glow"></div>
+
+    <div class="auth-brand__top">
+      <img src="assets/logo.png" alt="YourStocks logo" class="auth-brand__logo" />
+      <span class="auth-brand__name">YourStocks</span>
+    </div>
+
+    <div class="auth-brand__chart" id="candleArt" aria-hidden="true"></div>
+
+    <div class="auth-brand__copy">
+      <h1>Trade smarter.<br />Risk nothing but pride.</h1>
+      <p>Paper-trade real ASX and US tickers side by side, with a live portfolio, a proper PnL ledger, and a risk profile that actually explains itself.</p>
+    </div>
+
+    <ul class="auth-brand__points">
+      <li><span class="dot dot--bull"></span>ASX &amp; US markets, one watchlist</li>
+      <li><span class="dot dot--bull"></span>$100,000 paper balance to start</li>
+      <li><span class="dot dot--bear"></span>Zero real money, zero real risk</li>
+    </ul>
+  </div>
+
+  <!-- Right: auth card -->
+  <div class="auth-stage">
+    <div class="auth-card" id="authPanel" data-mode="login">
+
+      <div class="auth-tabs">
+        <button class="auth-tab is-active" id="tabLogin" type="button">Log in</button>
+        <button class="auth-tab" id="tabSignup" type="button">Sign up</button>
+      </div>
+
+      <!-- Login -->
+      <form id="loginForm" class="auth-form">
+        <h2>Welcome back</h2>
+        <p class="auth-sub">Log in to pick up where your portfolio left off.</p>
+
+        <label class="field">
+          <span>Email</span>
+          <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+        </label>
+
+        <p class="field-error" id="loginError"></p>
+
+        <button type="submit" class="btn btn--primary btn--block">Log in</button>
+        <button type="button" class="btn btn--ghost btn--block" id="demoLoginBtn">Skip in with demo account</button>
+
+        <p class="auth-switch">New here? <a href="#" data-switch-to="signup">Create an account</a></p>
+      </form>
+
+      <!-- Sign up -->
+      <form id="signupForm" class="auth-form is-hidden">
+        <h2>Create your account</h2>
+        <p class="auth-sub">Start with a $100,000 paper balance. No card, no catch.</p>
+
+        <label class="field">
+          <span>Name</span>
+          <input type="text" id="signupName" placeholder="Jamie Trader" required autocomplete="name" />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="signupPassword" placeholder="At least 6 characters" required autocomplete="new-password" />
+        </label>
+
+        <label class="field">
+          <span>Confirm password</span>
+          <input type="password" id="signupConfirm" placeholder="••••••••" required autocomplete="new-password" />
+        </label>
+
+        <p class="field-error" id="signupError"></p>
+
+        <button type="submit" class="btn btn--primary btn--block">Create account</button>
+
+        <p class="auth-switch">Already trading? <a href="#" data-switch-to="login">Log in</a></p>
+      </form>
+
+      <p class="auth-disclaimer">Paper trading only — simulated prices, no real money, no financial advice.</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+  // Small decorative candlestick strip in the brand panel — purely visual.
+  (function renderCandleArt() {
+    const el = document.getElementById("candleArt");
+    if (!el) return;
+    const n = 24;
+    let bars = "";
+    let last = 50;
+    for (let i = 0; i < n; i++) {
+      const delta = (Math.random() - 0.42) * 26;
+      const open = last;
+      const close = Math.max(8, Math.min(92, open + delta));
+      last = close;
+      const up = close >= open;
+      const top = 100 - Math.max(open, close);
+      const height = Math.max(Math.abs(close - open), 3);
+      const wickTop = 100 - Math.max(open, close) - 6;
+      const wickHeight = height + 12;
+      bars += `<div class="candle ${up ? "candle--up" : "candle--down"}" style="left:${(i / n) * 100}%; animation-delay:${(i * 0.08).toFixed(2)}s;">
+        <div class="candle__wick" style="top:${wickTop}%; height:${wickHeight}%;"></div>
+        <div class="candle__body" style="top:${top}%; height:${height}%;"></div>
+      </div>`;
+    }
+    el.innerHTML = bars;
+  })();
+</script>
+</body>
+</html>
